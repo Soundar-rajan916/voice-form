@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = "Admin@12345"
     GROQ_API_KEY: str = ""
     GROQ_STT_MODEL: str = "whisper-large-v3-turbo"
+    GROQ_STT_VOCAB_PROMPT: str = "" # Off by default, optional short vocabulary list only
     GROQ_LLM_MODEL: str = "qwen/qwen3.8-27b"
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",

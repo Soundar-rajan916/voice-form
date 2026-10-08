@@ -17,6 +17,7 @@ from app.schemas import (
 from app.deps import require_admin
 from app.services.questions import generate_field_questions
 from app.services.extraction import extract_answer
+from app.services.submission_title import compute_submission_titles_batch
 
 router = APIRouter(prefix="/admin/forms", tags=["admin-forms"])
 
@@ -352,6 +353,7 @@ async def get_admin_form_submissions(
     query = (
         select(Submission)
         .options(
+            selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
             selectinload(Submission.user)
@@ -366,10 +368,12 @@ async def get_admin_form_submissions(
 
     res = await db.execute(query)
     submissions = res.scalars().all()
+    title_map = await compute_submission_titles_batch(db, submissions)
 
     result = []
     for s in submissions:
         ver_fields = s.version.fields if s.version else []
+        sub_title = title_map.get(s.id, f"submission-{s.id}")
         result.append(
             SubmissionDetailResponse(
                 id=s.id,
@@ -381,6 +385,8 @@ async def get_admin_form_submissions(
                 status=s.status,
                 started_at=s.started_at,
                 completed_at=s.completed_at,
+                submission_title=sub_title,
+                submission_name=sub_title,
                 answers=[SubmissionAnswerResponse.model_validate(a) for a in s.answers],
                 fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
             )
@@ -403,6 +409,7 @@ async def export_submissions_csv(
     query = (
         select(Submission)
         .options(
+            selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
             selectinload(Submission.user)
@@ -414,12 +421,13 @@ async def export_submissions_csv(
 
     res = await db.execute(query)
     submissions = res.scalars().all()
+    title_map = await compute_submission_titles_batch(db, submissions)
 
     output = io.StringIO()
     writer = csv.writer(output)
 
     writer.writerow([
-        "Submission ID", "User Email", "Version Number", "Status",
+        "Submission Title", "Submission ID", "User Email", "Version Number", "Status",
         "Started At", "Completed At", "Field Name", "Cleaned Value", "Raw Transcript"
     ])
 
@@ -427,12 +435,13 @@ async def export_submissions_csv(
         v_num = s.version.version_number if s.version else 1
         answers_by_field = {a.field_id: a for a in s.answers}
         fields = s.version.fields if s.version else []
+        sub_title = title_map.get(s.id, f"submission-{s.id}")
         for f in fields:
             ans = answers_by_field.get(f.id)
             val = ans.value if ans else ""
             raw = ans.raw_transcript if ans else ""
             writer.writerow([
-                s.id, s.user.email if s.user else "", v_num, s.status,
+                sub_title, s.id, s.user.email if s.user else "", v_num, s.status,
                 s.started_at.isoformat() if s.started_at else "",
                 s.completed_at.isoformat() if s.completed_at else "",
                 f.field_name, val, raw

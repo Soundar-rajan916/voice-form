@@ -173,7 +173,7 @@ export const UserHome = () => {
                   <div>
                     <div className="flex items-center space-x-3 mb-1">
                       <span className="font-bold text-white text-base">
-                        Submission #{sub.id}
+                        {sub.submission_title || sub.submission_name || `Submission #${sub.id}`}
                       </span>
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
@@ -203,13 +203,15 @@ export const UserHome = () => {
                       <span>{sub.status === 'completed' ? 'View Summary' : 'Resume Session'}</span>
                     </Link>
 
-                    <button
-                      onClick={() => handleDeleteSubmission(sub.id)}
-                      className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-colors"
-                      title="Delete Submission"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {sub.status !== 'completed' && (
+                      <button
+                        onClick={() => handleDeleteSubmission(sub.id)}
+                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-colors"
+                        title="Delete Submission"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

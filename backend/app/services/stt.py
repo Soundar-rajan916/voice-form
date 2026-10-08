@@ -12,7 +12,8 @@ async def transcribe_audio_wav(
     field_description: Optional[str] = None
 ) -> Tuple[str, str, float]:
     """
-    Transcribes binary WAV audio using Groq Whisper API with context prompts and language hints.
+    Transcribes binary WAV audio using Groq Whisper API.
+    Enforces Fix 1: No descriptive context prompts, metadata probability filtering.
     Returns (transcript_text, detected_language, stt_duration_seconds).
     """
     start_time = time.time()
@@ -35,11 +36,9 @@ async def transcribe_audio_wav(
     if language_hint and language_hint in ["en", "ta"]:
         data["language"] = language_hint
 
-    # Context prompt for Whisper accuracy (Indian names/script context)
-    prompt_text = "Indian speaker; names may be Tamil or English."
-    if field_description:
-        prompt_text += f" The user is answering: {field_description}."
-    data["prompt"] = prompt_text
+    # Vocab prompt (optional short vocabulary list only, off by default)
+    if settings.GROQ_STT_VOCAB_PROMPT and settings.GROQ_STT_VOCAB_PROMPT.strip():
+        data["prompt"] = settings.GROQ_STT_VOCAB_PROMPT.strip()
 
     headers = {
         "Authorization": f"Bearer {settings.GROQ_API_KEY}"
@@ -53,6 +52,18 @@ async def transcribe_audio_wav(
             result_json = res.json()
             text = result_json.get("text", "").strip()
             detected_lang = result_json.get("language", language_hint or "en")
+
+            # Verbose segment metadata filtering (Fix 1)
+            segments = result_json.get("segments", [])
+            for seg in segments:
+                no_speech_prob = seg.get("no_speech_prob", 0.0)
+                avg_logprob = seg.get("avg_logprob", 0.0)
+                compression_ratio = seg.get("compression_ratio", 1.0)
+
+                if no_speech_prob > 0.6 or avg_logprob < -1.0 or compression_ratio > 2.4:
+                    print(f"[STT Metadata Drop] High no_speech_prob ({no_speech_prob:.2f}) or low avg_logprob ({avg_logprob:.2f})")
+                    return "", detected_lang, stt_duration
+
             return text, detected_lang, stt_duration
         else:
             print(f"[STT] Groq Whisper error status {res.status_code}: {res.text}")

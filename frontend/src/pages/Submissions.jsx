@@ -128,8 +128,8 @@ export const Submissions = () => {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                     <div className="flex items-center space-x-3">
-                      <span className="w-8 h-8 rounded-xl bg-indigo-950/80 border border-indigo-800 text-indigo-400 font-mono text-xs font-bold flex items-center justify-center">
-                        #{sub.id}
+                      <span className="px-3 py-1 rounded-xl bg-indigo-950/80 border border-indigo-800 text-indigo-300 font-mono text-xs font-bold flex items-center justify-center">
+                        {sub.submission_title || sub.submission_name || `#${sub.id}`}
                       </span>
                       <div>
                         <div className="flex items-center space-x-2">

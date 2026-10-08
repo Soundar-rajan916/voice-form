@@ -13,7 +13,11 @@ from app.security import decode_access_token
 from app.services.session import FormSessionManager
 from app.services.stt import transcribe_audio_wav
 from app.services.extraction import extract_answer
-from app.services.validation import validate_rule
+from app.services.validation import validate_rule, fast_path_validate
+from app.services.navigation import parse_navigation_command
+from app.services.normalizer import normalize_transcript
+from app.services.grounding import verify_grounding
+from app.services.filters import check_echo_guard, check_hallucination_filter
 
 router = APIRouter(prefix="/ws", tags=["websocket"])
 
@@ -136,8 +140,81 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
             message = await websocket.receive()
             start_turn_time = time.time()
 
+            # Handle JSON Control Commands (goto, back, undo, cancel_edit, reset_mic)
+            if "text" in message and message["text"]:
+                try:
+                    text_data = json.loads(message["text"])
+                    msg_type = text_data.get("type")
+                    turn_num = text_data.get("turn_number")
+
+                    # Idempotency Check
+                    if turn_num is not None and turn_num <= session_manager.last_processed_turn_number:
+                        st_msg = session_manager.build_state_dict()
+                        st_msg.update({"type": "state_sync"})
+                        await websocket.send_json(st_msg)
+                        continue
+
+                    if msg_type in ["goto", "back", "undo", "cancel_edit", "text_input", "reset_mic"]:
+                        if session_manager.is_locked():
+                            await websocket.send_json({
+                                "type": "error",
+                                "message": "Completed submissions are locked and cannot be edited"
+                            })
+                            continue
+
+                    if msg_type == "reset_mic":
+                        session_manager.reset_retries()
+                        res_msg = session_manager.build_state_dict()
+                        res_msg.update({"type": "mic_resumed"})
+                        await websocket.send_json(res_msg)
+                        continue
+
+                    if msg_type == "goto":
+                        target_id = text_data.get("field_id")
+                        if target_id and session_manager.goto(target_id):
+                            tf = session_manager.get_field_by_id(target_id)
+                            friendly_name = session_manager.get_friendly_field_name(tf)
+                            bot_txt = f"Okay, let's redo your {friendly_name}."
+                            session_manager.add_bot_message(bot_txt)
+                            nav_msg = session_manager.build_state_dict()
+                            nav_msg.update({
+                                "type": "navigate",
+                                "text": bot_txt
+                            })
+                            await websocket.send_json(nav_msg)
+                        continue
+
+                    elif msg_type == "back":
+                        if session_manager.go_back():
+                            nav_msg = session_manager.build_state_dict()
+                            nav_msg.update({"type": "navigate"})
+                            await websocket.send_json(nav_msg)
+                        continue
+
+                    elif msg_type == "undo":
+                        undone_id = session_manager.undo_last()
+                        bot_txt = "Reverted previous answer."
+                        session_manager.add_bot_message(bot_txt)
+                        nav_msg = session_manager.build_state_dict()
+                        nav_msg.update({
+                            "type": "navigate",
+                            "text": bot_txt
+                        })
+                        await websocket.send_json(nav_msg)
+                        continue
+
+                    elif msg_type == "cancel_edit":
+                        session_manager.cancel_editing()
+                        nav_msg = session_manager.build_state_dict()
+                        nav_msg.update({"type": "navigate"})
+                        await websocket.send_json(nav_msg)
+                        continue
+
+                except json.JSONDecodeError:
+                    pass
+
             current_field = session_manager.get_current_field()
-            if not current_field and session_manager.is_complete():
+            if not current_field and session_manager.is_complete() and session_manager.mode != "editing":
                 done_msg = session_manager.build_state_dict()
                 done_msg.update({"type": "done", "message": "All fields filled"})
                 await websocket.send_json(done_msg)
@@ -145,11 +222,68 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
 
             # A. BINARY WAV AUDIO RECEIVED
             if "bytes" in message and message["bytes"]:
+                if session_manager.is_locked():
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "Completed submissions are locked and cannot be edited"
+                    })
+                    continue
+
                 audio_bytes = message["bytes"]
                 upload_time = round(time.time() - start_turn_time, 4)
 
                 language_hint = auth_data.get("language_hint", "auto")
-                transcript, detected_lang, stt_time = await transcribe_audio_wav(audio_bytes, language_hint)
+                transcript, detected_lang, stt_time = await transcribe_audio_wav(
+                    audio_bytes, language_hint, current_field.description if current_field else None
+                )
+
+                if not transcript.strip():
+                    state_msg = session_manager.build_state_dict()
+                    state_msg.update({
+                        "type": "follow_up",
+                        "text": f"I didn't hear anything. {current_field.question_en if current_field else ''}",
+                        "debug_info": {"filter_status": "too_short_or_quiet", "counted_as_failure": False}
+                    })
+                    await websocket.send_json(state_msg)
+                    continue
+
+                # 1. ECHO GUARD CHECK (Fix A & Fix 1)
+                is_echo, max_sim, matched_bot_msg = check_echo_guard(transcript, session_manager.recent_bot_messages)
+                if is_echo:
+                    session_manager.echo_drop_count += 1
+                    print(f"[WS Echo Drop #{session_manager.echo_drop_count}] Transcript '{transcript}' matched bot msg '{matched_bot_msg}' (sim={max_sim:.2f})")
+
+                    show_headphone_hint = (session_manager.echo_drop_count >= 2)
+                    drop_msg = session_manager.build_state_dict()
+                    drop_msg.update({
+                        "type": "drop_silent",
+                        "reason": "echo_detected",
+                        "show_headphone_hint": show_headphone_hint,
+                        "debug_info": {
+                            "filter_status": f"echo_drop (sim={max_sim:.2f})",
+                            "raw_transcript": transcript,
+                            "counted_as_failure": False
+                        }
+                    })
+                    await websocket.send_json(drop_msg)
+                    continue
+
+                # 2. HALLUCINATION FILTER CHECK (Fix B & Fix 1)
+                is_hallucination, h_reason = check_hallucination_filter(transcript)
+                if is_hallucination:
+                    print(f"[WS Hallucination Drop] Transcript '{transcript}' dropped: {h_reason}")
+                    drop_msg = session_manager.build_state_dict()
+                    drop_msg.update({
+                        "type": "drop_silent",
+                        "reason": "hallucination_detected",
+                        "debug_info": {
+                            "filter_status": f"hallucination_drop ({h_reason})",
+                            "raw_transcript": transcript,
+                            "counted_as_failure": False
+                        }
+                    })
+                    await websocket.send_json(drop_msg)
+                    continue
 
                 # Send transcript event immediately
                 await websocket.send_json({
@@ -158,21 +292,71 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     "language": detected_lang
                 })
 
-                if not transcript.strip():
+                # 3. DETERMINISTIC NORMALIZATION (Fix E)
+                normalized_text = normalize_transcript(transcript, current_field.data_type if current_field else None)
+
+                # 4. ANSWER-FIRST RULE CHECK (Fix C & Fix 3)
+                is_direct_answer = False
+                if current_field and current_field.data_type in ["Email", "Phone", "Number", "Date"]:
+                    is_valid_ans, cleaned_ans, _ = validate_rule(normalized_text, current_field.data_type, current_field.choices)
+                    is_grd, _ = verify_grounding(cleaned_ans if is_valid_ans else normalized_text, transcript, current_field.data_type)
+                    if is_valid_ans and is_grd:
+                        is_direct_answer = True
+
+                nav_intent, target_fid, amb_fields, amb_msg = (None, None, None, None)
+                if not is_direct_answer:
+                    nav_intent, target_fid, amb_fields, amb_msg = parse_navigation_command(
+                        normalized_text, session_manager.fields, current_field
+                    )
+
+                if nav_intent == "undo":
+                    session_manager.undo_last()
+                    bot_txt = "Reverted previous answer."
+                    session_manager.add_bot_message(bot_txt)
+                    nav_msg = session_manager.build_state_dict()
+                    nav_msg.update({"type": "navigate", "text": bot_txt})
+                    await websocket.send_json(nav_msg)
+                    continue
+
+                elif nav_intent == "back":
+                    session_manager.go_back()
+                    nav_msg = session_manager.build_state_dict()
+                    nav_msg.update({"type": "navigate"})
+                    await websocket.send_json(nav_msg)
+                    continue
+
+                elif nav_intent == "goto" and target_fid:
+                    session_manager.goto(target_fid)
+                    tf = session_manager.get_field_by_id(target_fid)
+                    friendly_name = session_manager.get_friendly_field_name(tf)
+                    bot_txt = f"Okay, let's redo your {friendly_name}."
+                    session_manager.add_bot_message(bot_txt)
+                    nav_msg = session_manager.build_state_dict()
+                    nav_msg.update({
+                        "type": "navigate",
+                        "text": bot_txt
+                    })
+                    await websocket.send_json(nav_msg)
+                    continue
+
+                elif nav_intent == "ambiguous":
+                    bot_txt = amb_msg or "Which field would you like to change?"
+                    session_manager.add_bot_message(bot_txt)
                     state_msg = session_manager.build_state_dict()
                     state_msg.update({
                         "type": "follow_up",
-                        "text": f"I didn't hear anything. {current_field.question_en if current_field else ''}"
+                        "text": bot_txt
                     })
                     await websocket.send_json(state_msg)
                     continue
 
+                # 5. LLM EXTRACTION & GROUNDING (Fix D)
                 accumulated = session_manager.get_accumulated_transcript()
                 result, llm_time, path_taken = await extract_answer(
                     field_name=current_field.field_name,
                     data_type=current_field.data_type,
                     description=current_field.description,
-                    transcript=transcript,
+                    transcript=normalized_text,
                     choices=current_field.choices,
                     language_hint=detected_lang,
                     accumulated_transcript=accumulated
@@ -186,14 +370,28 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     "stt_ms": int(stt_time * 1000),
                     "llm_ms": int(llm_time * 1000),
                     "validation_ms": int(validation_time * 1000),
-                    "total_ms": int(total_turn_time * 1000)
+                    "total_ms": int(total_turn_time * 1000),
+                    "filter_status": "clean",
+                    "command_versus_answer": "answer" if not nav_intent else nav_intent,
+                    "normalized_text": normalized_text,
+                    "grounding_result": "grounded" if result.fulfilled else "not_grounded",
+                    "raw_transcript": transcript
                 }
 
-                # Voice Commands
+                # LLM Navigation Intent Handlers
                 if result.intent == "back":
                     session_manager.go_back()
                     nav_msg = session_manager.build_state_dict()
                     nav_msg.update({"type": "navigate"})
+                    await websocket.send_json(nav_msg)
+                    continue
+
+                elif result.intent == "undo":
+                    session_manager.undo_last()
+                    bot_txt = "Reverted previous answer."
+                    session_manager.add_bot_message(bot_txt)
+                    nav_msg = session_manager.build_state_dict()
+                    nav_msg.update({"type": "navigate", "text": bot_txt})
                     await websocket.send_json(nav_msg)
                     continue
 
@@ -204,10 +402,13 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         nav_msg.update({"type": "navigate"})
                         await websocket.send_json(nav_msg)
                     else:
+                        friendly_name = session_manager.get_friendly_field_name(current_field)
+                        bot_txt = f"{friendly_name} is required and cannot be skipped."
+                        session_manager.add_bot_message(bot_txt)
                         fu_msg = session_manager.build_state_dict()
                         fu_msg.update({
                             "type": "follow_up",
-                            "text": f"{current_field.field_name} is required and cannot be skipped."
+                            "text": bot_txt
                         })
                         await websocket.send_json(fu_msg)
                     continue
@@ -221,10 +422,14 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                 # Answer Processing
                 if result.incomplete:
                     session_manager.append_accumulated_transcript(transcript)
+                    friendly_name = session_manager.get_friendly_field_name(current_field)
+                    bot_txt = result.follow_up or f"Could you please complete your {friendly_name}?"
+                    session_manager.add_bot_message(bot_txt)
+                    timing_info["counted_as_failure"] = False
                     fu_msg = session_manager.build_state_dict()
                     fu_msg.update({
                         "type": "follow_up",
-                        "text": result.follow_up or f"Could you please complete your {current_field.field_name}?",
+                        "text": bot_txt,
                         "timing": timing_info
                     })
                     await websocket.send_json(fu_msg)
@@ -240,10 +445,10 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         async_persist_answer(submission_id, current_field.id, result.value, transcript, detected_lang)
                     )
 
-                    # Advance session manager FIRST
+                    # Advance session manager
                     session_manager.advance()
 
-                    # Build unified state message with updated field info
+                    timing_info["counted_as_failure"] = False
                     ans_msg = session_manager.build_state_dict()
                     ans_msg.update({
                         "type": "answer",
@@ -255,21 +460,29 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     await websocket.send_json(ans_msg)
 
                 else:
+                    # Increment failure count ONLY for genuine extraction/validation failures!
                     retries = session_manager.increment_retry()
+                    friendly_name = session_manager.get_friendly_field_name(current_field)
+                    timing_info["counted_as_failure"] = True
                     if retries >= 3:
+                        bot_txt = f"Having trouble capturing {friendly_name}? Feel free to type your answer below."
+                        session_manager.add_bot_message(bot_txt)
                         off_msg = session_manager.build_state_dict()
                         off_msg.update({
                             "type": "offer_typed_input",
                             "field_id": current_field.id,
-                            "field_name": current_field.field_name,
-                            "message": f"Having trouble capturing {current_field.field_name}? Feel free to type your answer below."
+                            "field_name": friendly_name,
+                            "message": bot_txt,
+                            "timing": timing_info
                         })
                         await websocket.send_json(off_msg)
                     else:
+                        bot_txt = result.follow_up or f"I didn't quite catch that. Could you please provide your {friendly_name}?"
+                        session_manager.add_bot_message(bot_txt)
                         fu_msg = session_manager.build_state_dict()
                         fu_msg.update({
                             "type": "follow_up",
-                            "text": result.follow_up or f"I didn't quite catch that. {current_field.question_en}",
+                            "text": bot_txt,
                             "timing": timing_info
                         })
                         await websocket.send_json(fu_msg)
@@ -282,12 +495,51 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     target_field_id = text_data.get("field_id", current_field.id if current_field else None)
 
                     if target_field_id and val:
-                        # Find field by target_field_id
-                        target_field_obj = next((f for f in session_manager.fields if f.id == target_field_id), current_field)
-                        
+                        target_field_obj = session_manager.get_field_by_id(target_field_id) or current_field
+
+                        # Check if typed input is a navigation command first
+                        nav_intent, target_fid, amb_fields, amb_msg = parse_navigation_command(
+                            val, session_manager.fields, current_field
+                        )
+                        if nav_intent == "undo":
+                            session_manager.undo_last()
+                            bot_txt = "Reverted previous answer."
+                            session_manager.add_bot_message(bot_txt)
+                            nav_msg = session_manager.build_state_dict()
+                            nav_msg.update({"type": "navigate", "text": bot_txt})
+                            await websocket.send_json(nav_msg)
+                            continue
+                        elif nav_intent == "back":
+                            session_manager.go_back()
+                            nav_msg = session_manager.build_state_dict()
+                            nav_msg.update({"type": "navigate"})
+                            await websocket.send_json(nav_msg)
+                            continue
+                        elif nav_intent == "goto" and target_fid:
+                            session_manager.goto(target_fid)
+                            tf = session_manager.get_field_by_id(target_fid)
+                            friendly_name = session_manager.get_friendly_field_name(tf)
+                            bot_txt = f"Okay, let's redo your {friendly_name}."
+                            session_manager.add_bot_message(bot_txt)
+                            nav_msg = session_manager.build_state_dict()
+                            nav_msg.update({"type": "navigate", "text": bot_txt})
+                            await websocket.send_json(nav_msg)
+                            continue
+                        elif nav_intent == "ambiguous":
+                            bot_txt = amb_msg or "Which field would you like to change?"
+                            session_manager.add_bot_message(bot_txt)
+                            state_msg = session_manager.build_state_dict()
+                            state_msg.update({"type": "follow_up", "text": bot_txt})
+                            await websocket.send_json(state_msg)
+                            continue
+
+                        normalized_val = normalize_transcript(val, target_field_obj.data_type)
+
                         # Validate typed input
-                        is_valid, cleaned, err = validate_rule(val, target_field_obj.data_type, target_field_obj.choices)
-                        if is_valid:
+                        is_valid, cleaned, err = validate_rule(normalized_val, target_field_obj.data_type, target_field_obj.choices)
+                        is_grd, g_reason = verify_grounding(cleaned if is_valid else normalized_val, val, target_field_obj.data_type)
+
+                        if is_valid and is_grd:
                             session_manager.record_answer(
                                 field_id=target_field_id,
                                 value=cleaned,
@@ -309,10 +561,13 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                             })
                             await websocket.send_json(ans_msg)
                         else:
+                            friendly_name = session_manager.get_friendly_field_name(target_field_obj)
+                            bot_txt = f"Invalid input for {friendly_name}: {err or g_reason}"
+                            session_manager.add_bot_message(bot_txt)
                             fu_msg = session_manager.build_state_dict()
                             fu_msg.update({
                                 "type": "follow_up",
-                                "text": f"Invalid input for {target_field_obj.field_name}: {err}"
+                                "text": bot_txt
                             })
                             await websocket.send_json(fu_msg)
 

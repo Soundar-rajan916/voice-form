@@ -40,7 +40,10 @@ def fast_path_validate(
         if data_type == "Phone" and (len(digits_only) == 10 or (len(digits_only) == 13 and digits_only.startswith("+91"))):
             return True, digits_only
         elif data_type == "Number" and digits_only.isdigit():
-            return True, digits_only
+            num_val = int(digits_only)
+            if 0 <= num_val < 100:
+                return True, str(num_val)
+            return False, None
 
     elif data_type == "Boolean":
         if clean_text in ["yes", "yeah", "yup", "true", "1", "ஆமாம்", "சரி", "ஆம்"]:
@@ -90,12 +93,16 @@ def validate_rule(
         try:
             if "." in normalized:
                 num = float(normalized)
+                if num < 0 or num >= 100:
+                    return False, val_str, "Age must be under 100 (0 to 99)."
                 return True, str(num), None
             else:
                 num = int(re.sub(r"[^\d-]", "", normalized))
+                if num < 0 or num >= 100:
+                    return False, val_str, "Age must be under 100 (0 to 99)."
                 return True, str(num), None
         except ValueError:
-            return False, val_str, "Please enter a valid number."
+            return False, val_str, "Please enter a valid number under 100."
 
     elif data_type == "Date":
         date_formats = ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"]

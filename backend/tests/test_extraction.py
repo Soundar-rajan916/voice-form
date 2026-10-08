@@ -71,3 +71,16 @@ def test_rule_validation():
     valid_d, clean_d, _ = validate_rule("2026-10-08", "Date")
     assert valid_d is True
     assert clean_d == "2026-10-08"
+
+    # Age under 100 validation
+    valid_age_ok, clean_age, _ = validate_rule("25", "Number")
+    assert valid_age_ok is True
+    assert clean_age == "25"
+
+    valid_age_over, _, err_age = validate_rule("105", "Number")
+    assert valid_age_over is False
+    assert "under 100" in err_age
+
+    valid_age_neg, _, err_neg = validate_rule("-5", "Number")
+    assert valid_age_neg is False
+    assert "under 100" in err_neg

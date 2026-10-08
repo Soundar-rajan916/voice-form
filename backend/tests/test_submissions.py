@@ -80,3 +80,107 @@ async def test_4_field_form_state_machine():
     state4 = session.build_state_dict()
     assert state4["current_field"] is None or state4["answered_count"] == 4
     assert state4["done"] is True # Done ONLY after all 4 required fields are answered!
+
+
+@pytest.mark.asyncio
+async def test_submission_name_formatting(client: AsyncClient, admin_token_headers, user_token_headers):
+    # 1. Create and publish form 'hospital'
+    f1_resp = await client.post(
+        "/admin/forms",
+        json={
+            "title": "hospital",
+            "description": "Hospital registration",
+            "fields": [
+                {"field_name": "patient_name", "data_type": "String", "description": "Patient Name", "required": True, "position": 0}
+            ]
+        },
+        headers=admin_token_headers
+    )
+    assert f1_resp.status_code == 201
+    f1_id = f1_resp.json()["id"]
+    await client.post(f"/admin/forms/{f1_id}/publish", headers=admin_token_headers)
+
+    # 2. Create and publish form 'General Form'
+    f2_resp = await client.post(
+        "/admin/forms",
+        json={
+            "title": "General Form",
+            "description": "General feedback",
+            "fields": [
+                {"field_name": "feedback", "data_type": "String", "description": "Feedback", "required": True, "position": 0}
+            ]
+        },
+        headers=admin_token_headers
+    )
+    assert f2_resp.status_code == 201
+    f2_id = f2_resp.json()["id"]
+    await client.post(f"/admin/forms/{f2_id}/publish", headers=admin_token_headers)
+
+    # 3. Create sub 1 for hospital -> hospital-1
+    sub1_res = await client.post(f"/forms/{f1_id}/submissions", headers=user_token_headers)
+    assert sub1_res.status_code == 201
+    sub1_data = sub1_res.json()
+    assert sub1_data["submission_title"] == "hospital-1"
+    assert sub1_data["submission_name"] == "hospital-1"
+
+    # 4. Create sub 2 for hospital -> hospital-2
+    sub2_res = await client.post(f"/forms/{f1_id}/submissions", headers=user_token_headers)
+    assert sub2_res.status_code == 201
+    sub2_data = sub2_res.json()
+    assert sub2_data["submission_title"] == "hospital-2"
+    assert sub2_data["submission_name"] == "hospital-2"
+
+    # 5. Create sub 1 for General Form -> general form-1
+    sub3_res = await client.post(f"/forms/{f2_id}/submissions", headers=user_token_headers)
+    assert sub3_res.status_code == 201
+    sub3_data = sub3_res.json()
+    assert sub3_data["submission_title"] == "general form-1"
+    assert sub3_data["submission_name"] == "general form-1"
+
+    # 6. Verify list_user_submissions returns formatted names
+    list_res = await client.get("/submissions", headers=user_token_headers)
+    assert list_res.status_code == 200
+    list_data = list_res.json()
+    titles = [s["submission_title"] for s in list_data]
+    assert "hospital-1" in titles
+    assert "hospital-2" in titles
+    assert "general form-1" in titles
+
+
+@pytest.mark.asyncio
+async def test_user_cannot_delete_completed_submission(client: AsyncClient, admin_token_headers, user_token_headers):
+    # Create and publish a form
+    f_res = await client.post(
+        "/admin/forms",
+        json={
+            "title": "Feedback Form",
+            "description": "User feedback",
+            "fields": [
+                {"field_name": "comment", "data_type": "String", "description": "Comment", "required": True, "position": 0}
+            ]
+        },
+        headers=admin_token_headers
+    )
+    f_id = f_res.json()["id"]
+    await client.post(f"/admin/forms/{f_id}/publish", headers=admin_token_headers)
+
+    # User starts submission
+    sub_res = await client.post(f"/forms/{f_id}/submissions", headers=user_token_headers)
+    sub_id = sub_res.json()["id"]
+
+    # Complete the submission
+    field_id = sub_res.json()["fields"][0]["id"]
+    comp_res = await client.post(
+        f"/submissions/{sub_id}/complete",
+        json=[{"field_id": field_id, "value": "Great app!"}],
+        headers=user_token_headers
+    )
+    assert comp_res.status_code == 200
+    assert comp_res.json()["status"] == "completed"
+
+    # User tries to delete completed submission -> must fail with 400
+    del_res = await client.delete(f"/submissions/{sub_id}", headers=user_token_headers)
+    assert del_res.status_code == 400
+    assert del_res.json()["detail"] == "Submitted forms cannot be deleted"
+
+

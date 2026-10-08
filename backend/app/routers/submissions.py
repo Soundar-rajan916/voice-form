@@ -12,6 +12,7 @@ from app.schemas import (
     SubmissionAnswerResponse, FormFieldResponse
 )
 from app.deps import require_user
+from app.services.submission_title import compute_submission_title, compute_submission_titles_batch
 
 router = APIRouter(tags=["user-submissions"])
 
@@ -46,6 +47,7 @@ async def start_submission(
     res = await db.execute(
         select(Submission)
         .options(
+            selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
             selectinload(Submission.user)
@@ -53,6 +55,7 @@ async def start_submission(
         .where(Submission.id == submission.id)
     )
     sub = res.scalar_one()
+    title_str = await compute_submission_title(db, sub, form.title)
 
     return SubmissionDetailResponse(
         id=sub.id,
@@ -64,6 +67,8 @@ async def start_submission(
         status=sub.status,
         started_at=sub.started_at,
         completed_at=sub.completed_at,
+        submission_title=title_str,
+        submission_name=title_str,
         answers=[],
         fields=[FormFieldResponse.model_validate(f) for f in sub.version.fields]
     )
@@ -76,6 +81,7 @@ async def list_user_submissions(
     res = await db.execute(
         select(Submission)
         .options(
+            selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
             selectinload(Submission.user)
@@ -84,10 +90,12 @@ async def list_user_submissions(
         .order_by(Submission.started_at.desc())
     )
     submissions = res.scalars().all()
+    title_map = await compute_submission_titles_batch(db, submissions)
 
     result = []
     for s in submissions:
         ver_fields = s.version.fields if s.version else []
+        sub_title = title_map.get(s.id, f"submission-{s.id}")
         result.append(
             SubmissionDetailResponse(
                 id=s.id,
@@ -99,6 +107,8 @@ async def list_user_submissions(
                 status=s.status,
                 started_at=s.started_at,
                 completed_at=s.completed_at,
+                submission_title=sub_title,
+                submission_name=sub_title,
                 answers=[SubmissionAnswerResponse.model_validate(a) for a in s.answers],
                 fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
             )
@@ -114,6 +124,7 @@ async def get_user_submission(
     res = await db.execute(
         select(Submission)
         .options(
+            selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
             selectinload(Submission.user)
@@ -126,6 +137,7 @@ async def get_user_submission(
     if not sub or (sub.user_id != current_user.id and current_user.role != "admin"):
         raise HTTPException(status_code=404, detail="Submission not found")
 
+    sub_title = await compute_submission_title(db, sub)
     ver_fields = sub.version.fields if sub.version else []
     return SubmissionDetailResponse(
         id=sub.id,
@@ -137,6 +149,8 @@ async def get_user_submission(
         status=sub.status,
         started_at=sub.started_at,
         completed_at=sub.completed_at,
+        submission_title=sub_title,
+        submission_name=sub_title,
         answers=[SubmissionAnswerResponse.model_validate(a) for a in sub.answers],
         fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
     )
@@ -154,6 +168,12 @@ async def delete_user_submission(
     if not sub or (sub.user_id != current_user.id and current_user.role != "admin"):
         raise HTTPException(status_code=404, detail="Submission not found")
 
+    if sub.status == "completed" and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Submitted forms cannot be deleted"
+        )
+
     await db.delete(sub)
     await db.commit()
     return None
@@ -168,6 +188,7 @@ async def complete_submission(
     res = await db.execute(
         select(Submission)
         .options(
+            selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
             selectinload(Submission.user)
@@ -208,6 +229,7 @@ async def complete_submission(
     res = await db.execute(
         select(Submission)
         .options(
+            selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
             selectinload(Submission.user)
@@ -215,6 +237,7 @@ async def complete_submission(
         .where(Submission.id == submission_id)
     )
     updated_sub = res.scalar_one()
+    sub_title = await compute_submission_title(db, updated_sub)
     ver_fields = updated_sub.version.fields if updated_sub.version else []
 
     return SubmissionDetailResponse(
@@ -227,6 +250,8 @@ async def complete_submission(
         status=updated_sub.status,
         started_at=updated_sub.started_at,
         completed_at=updated_sub.completed_at,
+        submission_title=sub_title,
+        submission_name=sub_title,
         answers=[SubmissionAnswerResponse.model_validate(a) for a in updated_sub.answers],
         fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
     )
