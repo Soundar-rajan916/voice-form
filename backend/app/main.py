@@ -8,8 +8,9 @@ from app.config import settings
 from app.db import engine, Base, AsyncSessionLocal
 from app.models import User
 from app.security import hash_password
-from app.routers import auth, admin_forms, forms, submissions, ws
+from app.routers import auth, admin_forms, forms, submissions, ws, documents
 from app.services.extraction import extract_answer
+from app.services.vision_reader import check_vision_model_availability
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,6 +31,18 @@ async def lifespan(app: FastAPI):
             session.add(admin_user)
             await session.commit()
             print(f"[Startup] Seeded initial admin user: {settings.ADMIN_EMAIL}")
+
+    # Startup Diagnostic: Active STT Provider Log
+    stt_provider = (settings.STT_PROVIDER or "groq").lower()
+    if stt_provider == "sarvam" and settings.SARVAM_API_KEY and not settings.SARVAM_API_KEY.startswith("dummy"):
+        print(f"[STT Service] ACTIVE PROVIDER: Sarvam AI STT (Model: {settings.SARVAM_STT_MODEL})")
+    elif settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("gsk_dummy"):
+        print(f"[STT Service] ACTIVE PROVIDER: Groq Whisper STT (Model: {settings.GROQ_STT_MODEL})")
+    else:
+        print(f"[STT Service] ACTIVE PROVIDER: Local Simulation Mode (No valid API key set for '{stt_provider}')")
+
+    # Check Vision Model availability
+    await check_vision_model_availability()
 
     # Startup Diagnostic: Check Groq Models & API Key
     if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("gsk_dummy"):
@@ -86,6 +99,7 @@ app.include_router(admin_forms.router)
 app.include_router(forms.router)
 app.include_router(submissions.router)
 app.include_router(ws.router)
+app.include_router(documents.router)
 
 @app.get("/")
 async def root():

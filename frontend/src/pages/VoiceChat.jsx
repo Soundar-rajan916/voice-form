@@ -8,7 +8,8 @@ import { Navbar } from '../components/Navbar';
 import { PrivacyNoticeModal } from '../components/PrivacyNoticeModal';
 import {
   Mic, MicOff, Send, CheckCircle2, ArrowLeft, RotateCcw, Volume2, VolumeX,
-  Globe, ShieldCheck, Sparkles, AlertCircle, Edit3, Activity, Code, Lock, X, Undo2, Headphones
+  Globe, ShieldCheck, Sparkles, AlertCircle, Edit3, Activity, Code, Lock, X, Undo2, Headphones,
+  Paperclip, Upload, FileText, Check, AlertTriangle, Info, CheckCheck
 } from 'lucide-react';
 
 const VAD_SILENCE_CONFIG = {
@@ -27,7 +28,7 @@ export const VoiceChat = () => {
   const navigate = useNavigate();
 
   // Settings & Toggles
-  const [uiLang, setUiLang] = useState('en'); // 'en' | 'ta' | 'auto'
+  const [uiLang, setUiLang] = useState('en');
   const [speechEnabled, setSpeechEnabled] = useState(true);
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
@@ -36,14 +37,25 @@ export const VoiceChat = () => {
   const [currentField, setCurrentField] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fields, setFields] = useState([]);
-  const [answers, setAnswers] = useState({}); // field_id -> value
+  const [answers, setAnswers] = useState({});
+  const [proposals, setProposals] = useState([]);
   const [isDone, setIsDone] = useState(false);
-  const [mode, setMode] = useState('normal'); // 'normal' | 'editing' | 'review'
+  const [mode, setMode] = useState('normal');
   const [editingFieldId, setEditingFieldId] = useState(null);
   const [updatedFieldId, setUpdatedFieldId] = useState(null);
   const [allAnswered, setAllAnswered] = useState(false);
   const [canEdit, setCanEdit] = useState(true);
   const [submissionStatus, setSubmissionStatus] = useState('in_progress');
+
+  // Document Upload & Progress State
+  const [docUploading, setDocUploading] = useState(false);
+  const [docProgress, setDocProgress] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Proposal Editing Modal State
+  const [editingProposal, setEditingProposal] = useState(null);
+  const [editingProposalVal, setEditingProposalVal] = useState('');
 
   // Notifications & Toast
   const [undoToast, setUndoToast] = useState(null);
@@ -55,7 +67,7 @@ export const VoiceChat = () => {
   const [offeredTypedInput, setOfferedTypedInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Turn Timings & Filter Debug Info (Fix 4)
+  // Turn Timings
   const [latestTiming, setLatestTiming] = useState(null);
 
   const wsRef = useRef(null);
@@ -63,14 +75,10 @@ export const VoiceChat = () => {
   const inputRef = useRef(null);
 
   const { speak, stop: stopSpeech, isSpeaking } = useSpeech(speechEnabled);
-
-  // Silence duration based on server's current field data type
   const silenceDurationMs = currentField ? VAD_SILENCE_CONFIG[currentField.data_type] || 600 : 600;
 
-  // Handle Speech End Callback from VAD
   const handleSpeechEnd = (wavBuffer) => {
     setUndoToast(null);
-
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(wavBuffer);
     }
@@ -90,7 +98,6 @@ export const VoiceChat = () => {
     disabled: isSpeaking || submissionStatus === 'submitted'
   });
 
-  // Tapping mic resets retry counter and resumes listening cleanly (Fix 2)
   const handleMicTap = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'reset_mic' }));
@@ -99,12 +106,10 @@ export const VoiceChat = () => {
     toggleListening();
   };
 
-  // Cancel speech synthesis on language change
   useEffect(() => {
     stopSpeech();
   }, [uiLang, stopSpeech]);
 
-  // Privacy Notice Modal Check
   useEffect(() => {
     const accepted = localStorage.getItem('voiceform_privacy_accepted');
     if (!accepted) {
@@ -112,7 +117,6 @@ export const VoiceChat = () => {
     }
   }, []);
 
-  // Keyboard shortcut Ctrl+Shift+D for Debug Panel, Escape to cancel editing
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
@@ -128,12 +132,10 @@ export const VoiceChat = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mode]);
 
-  // Auto-scroll chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // Helper to prompt current field question safely
   const promptFieldQuestion = (fieldObj, language = uiLang, isEditing = false) => {
     if (!fieldObj) return;
 
@@ -159,7 +161,6 @@ export const VoiceChat = () => {
     });
   };
 
-  // Sync state from server dict payload
   const applyServerState = (data) => {
     if (data.fields) setFields(data.fields);
     if ('current_field' in data) setCurrentField(data.current_field);
@@ -178,9 +179,12 @@ export const VoiceChat = () => {
       });
       setAnswers(updatedAns);
     }
+
+    if (data.proposals) {
+      setProposals(data.proposals);
+    }
   };
 
-  // Connect WebSocket and handle server state updates
   useEffect(() => {
     if (!submissionId || !token) return;
 
@@ -198,7 +202,6 @@ export const VoiceChat = () => {
 
       if (data.type === 'ready') {
         applyServerState(data);
-
         if (data.submission_status === 'submitted') {
           setChatMessages([
             { sender: 'bot', text: '🔒 This form has already been submitted and is locked for editing.' }
@@ -209,10 +212,21 @@ export const VoiceChat = () => {
           ]);
         } else if (data.current_field) {
           setChatMessages([
-            { sender: 'bot', text: "👋 Welcome! Let's fill out this voice form." }
+            { sender: 'bot', text: "👋 Welcome! Let's fill out this form." }
           ]);
           promptFieldQuestion(data.current_field, uiLang);
         }
+      }
+
+      else if (data.type === 'document_status') {
+        setDocProgress({ message: data.message, progress: data.progress });
+        if (data.progress >= 100) {
+          setTimeout(() => setDocProgress(null), 3000);
+        }
+      }
+
+      else if (data.type === 'state_sync') {
+        applyServerState(data);
       }
 
       else if (data.type === 'transcript') {
@@ -297,11 +311,6 @@ export const VoiceChat = () => {
         speak(submittedMsg, 'en');
       }
 
-      else if (data.type === 'done') {
-        applyServerState(data);
-        setChatMessages((prev) => [...prev, { sender: 'bot', text: data.message }]);
-      }
-
       else if (data.type === 'error') {
         setSubmitting(false);
         setChatMessages((prev) => [
@@ -318,7 +327,112 @@ export const VoiceChat = () => {
     };
   }, [submissionId, token]);
 
-  // Handle Pencil Click
+  // Document File Upload Handler
+  const handleUploadFile = async (file) => {
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext !== 'pdf' && ext !== 'docx') {
+      alert('Only .pdf and .docx files are accepted.');
+      return;
+    }
+
+    const acceptedPrivacy = localStorage.getItem('voiceform_privacy_accepted');
+    if (!acceptedPrivacy) {
+      setPrivacyModalOpen(true);
+      return;
+    }
+
+    setDocUploading(true);
+    setDocProgress({ message: 'Uploading document...', progress: 5 });
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`/submissions/${submissionId}/documents`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Document upload failed');
+      }
+
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: 'bot', text: `📄 ${data.message || 'Extracted proposals from document.'}` }
+      ]);
+      if (data.proposals) {
+        setProposals(data.proposals);
+      }
+    } catch (err) {
+      alert(`Document Upload Error: ${err.message}`);
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: 'bot', text: `⚠️ Document processing error: ${err.message}`, isError: true }
+      ]);
+    } finally {
+      setDocUploading(false);
+    }
+  };
+
+  // Drag & Drop Handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleUploadFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  // Proposal Actions via WebSocket
+  const handleAcceptProposals = (proposalIds = null) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'accept_proposals',
+        proposal_ids: proposalIds
+      }));
+    }
+  };
+
+  const handleDismissProposal = (proposalId) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'dismiss_proposal',
+        proposal_id: proposalId
+      }));
+    }
+  };
+
+  const handleEditProposalSubmit = (e) => {
+    e.preventDefault();
+    if (!editingProposal || !editingProposalVal.trim()) return;
+
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'edit_proposal',
+        proposal_id: editingProposal.id,
+        new_value: editingProposalVal.trim()
+      }));
+    }
+    setEditingProposal(null);
+    setEditingProposalVal('');
+  };
+
   const handleGotoField = (fieldId) => {
     if (submissionStatus === 'submitted') return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -327,7 +441,6 @@ export const VoiceChat = () => {
     }
   };
 
-  // Handle Back Button click
   const handleBackButton = () => {
     if (submissionStatus === 'submitted') return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -335,7 +448,6 @@ export const VoiceChat = () => {
     }
   };
 
-  // Handle Undo Click
   const handleUndo = () => {
     if (submissionStatus === 'submitted') return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -344,14 +456,12 @@ export const VoiceChat = () => {
     }
   };
 
-  // Handle Cancel Editing
   const handleCancelEditing = () => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'cancel_edit' }));
     }
   };
 
-  // Handle Manual Text Input Submit
   const handleSendText = (e) => {
     e.preventDefault();
     if (!textInput.trim() || submissionStatus === 'submitted') return;
@@ -376,7 +486,6 @@ export const VoiceChat = () => {
     }
   };
 
-  // Complete Submission
   const handleCompleteSubmission = async () => {
     setSubmitting(true);
     try {
@@ -392,10 +501,6 @@ export const VoiceChat = () => {
         await userFormsApi.completeSubmission(submissionId, answersPayload);
         setSubmissionStatus('submitted');
         setCanEdit(false);
-        setChatMessages((prev) => [
-          ...prev,
-          { sender: 'bot', text: '🎉 Form successfully submitted!' }
-        ]);
       }
     } catch (err) {
       alert(err.message || 'Failed to submit form');
@@ -405,9 +510,15 @@ export const VoiceChat = () => {
   };
 
   const activeEditingField = fields.find((f) => f.id === editingFieldId) || currentField;
+  const eligibleAcceptAllCount = proposals.filter((p) => !p.is_excluded_from_accept_all).length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col h-screen overflow-hidden">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="min-h-screen bg-[#022B3A] text-[#FFFFFF] flex flex-col h-screen overflow-hidden relative"
+    >
       <Navbar
         uiLang={uiLang}
         setUiLang={setUiLang}
@@ -420,24 +531,33 @@ export const VoiceChat = () => {
         onClose={() => setPrivacyModalOpen(false)}
       />
 
+      {/* Drag & Drop Visual Overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-indigo-950/90 backdrop-blur-md flex flex-col items-center justify-center border-4 border-dashed border-indigo-400 animate-fade-in pointer-events-none">
+          <Upload className="w-16 h-16 text-indigo-400 mb-4 animate-bounce" />
+          <h2 className="text-2xl font-bold text-white">Drop Document Here</h2>
+          <p className="text-sm text-indigo-200 mt-2">Only .pdf and .docx files will be extracted via Vision AI</p>
+        </div>
+      )}
+
       {/* Main Grid: Left Chat (65%) | Right Side Panel (35%) */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 flex gap-6 overflow-hidden">
         {/* LEFT: Voice Chat Panel */}
-        <div className="flex-1 bg-slate-900 border border-slate-800 rounded-3xl flex flex-col overflow-hidden shadow-2xl relative">
+        <div className="flex-1 bg-[#022B3A] border border-[#1F7A8C]/40 rounded-3xl flex flex-col overflow-hidden shadow-2xl relative">
           {/* Header */}
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+          <div className="p-4 border-b border-[#1F7A8C]/30 flex items-center justify-between bg-[#022B3A]">
             <div className="flex items-center space-x-3">
               <Link
                 to="/user"
-                className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-colors"
+                className="p-2 bg-[#1F7A8C]/30 hover:bg-[#1F7A8C]/60 text-[#BFDBF7] hover:text-[#FFFFFF] rounded-xl transition-colors border border-[#1F7A8C]/40"
               >
                 <ArrowLeft className="w-4 h-4" />
               </Link>
               <div>
-                <h2 className="text-base font-bold text-white flex items-center space-x-2">
-                  <span>Voice Chat Assistant</span>
+                <h2 className="text-base font-bold text-[#FFFFFF] flex items-center space-x-2">
+                  <span>Voice & Document Assistant</span>
                   {submissionStatus === 'submitted' ? (
-                    <Lock className="w-4 h-4 text-emerald-400" />
+                    <Lock className="w-4 h-4 text-[#BFDBF7]" />
                   ) : (
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                   )}
@@ -475,7 +595,7 @@ export const VoiceChat = () => {
                 className={`p-2 rounded-xl border text-xs font-mono transition-colors flex items-center space-x-1 ${
                   debugPanelOpen ? 'bg-indigo-950 text-indigo-300 border-indigo-700' : 'bg-slate-800/60 text-slate-400 border-slate-700'
                 }`}
-                title="Toggle Latency & Filter Debug Panel (Ctrl+Shift+D)"
+                title="Toggle Latency & Debug Panel"
               >
                 <Code className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Debug</span>
@@ -483,7 +603,26 @@ export const VoiceChat = () => {
             </div>
           </div>
 
-          {/* Headphone Recommendation Hint */}
+          {/* Document Status / Progress Banner */}
+          {docProgress && (
+            <div className="mx-4 mt-3 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-700 text-indigo-200 text-xs shadow-lg animate-fade-in space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold flex items-center space-x-2">
+                  <FileText className="w-4 h-4 text-indigo-400 animate-spin" />
+                  <span>{docProgress.message}</span>
+                </span>
+                <span className="font-mono text-indigo-300">{docProgress.progress}%</span>
+              </div>
+              <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-indigo-500 h-full transition-all duration-300"
+                  style={{ width: `${docProgress.progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Headphone Hint */}
           {headphoneHint && (
             <div className="mx-4 mt-3 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-700 text-indigo-200 text-xs flex items-center justify-between shadow-lg animate-fade-in">
               <div className="flex items-center space-x-2">
@@ -493,37 +632,6 @@ export const VoiceChat = () => {
               <button onClick={() => setHeadphoneHint(false)} className="text-indigo-400 hover:text-white">
                 <X className="w-3.5 h-3.5" />
               </button>
-            </div>
-          )}
-
-          {/* Editing Mode Active Banner */}
-          {mode === 'editing' && activeEditingField && (
-            <div className="mx-4 mt-3 p-3 rounded-2xl bg-amber-950/80 border border-amber-800 text-amber-200 text-xs flex items-center justify-between shadow-lg animate-fade-in">
-              <div className="flex items-center space-x-2">
-                <Edit3 className="w-4 h-4 text-amber-400" />
-                <span>
-                  Editing Field: <strong>{activeEditingField.field_name.replace('_', ' ')}</strong> ({activeEditingField.data_type})
-                </span>
-              </div>
-              <button
-                onClick={handleCancelEditing}
-                className="px-2.5 py-1 bg-amber-900/80 hover:bg-amber-800 text-amber-100 rounded-lg text-xs flex items-center space-x-1 transition-colors"
-                title="Cancel editing (Press Escape)"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Cancel</span>
-              </button>
-            </div>
-          )}
-
-          {/* Mic Error Banner */}
-          {micError && (
-            <div className="m-4 p-4 rounded-2xl bg-red-950/90 border border-red-800 text-red-200 text-xs flex items-start space-x-3 shadow-lg">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <strong className="block font-bold text-red-100 mb-0.5">Microphone Warning</strong>
-                <span>{micError}</span>
-              </div>
             </div>
           )}
 
@@ -546,44 +654,14 @@ export const VoiceChat = () => {
                   }`}
                 >
                   <p>{msg.text}</p>
-                  {msg.replaced && (
-                    <span className="text-[10px] no-underline font-mono text-slate-500 block mt-1">
-                      [Replaced by edit]
-                    </span>
-                  )}
                 </div>
               </div>
             ))}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Undo Toast Floating Bar */}
-          {undoToast && submissionStatus !== 'submitted' && (
-            <div className="mx-4 mb-2 p-3 rounded-xl bg-indigo-950 border border-indigo-700 text-indigo-200 text-xs flex items-center justify-between shadow-2xl animate-fade-in">
-              <span>Saved answer for <strong>{undoToast.fieldName}</strong>.</span>
-              <button
-                onClick={handleUndo}
-                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg flex items-center space-x-1 transition-colors"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-                <span>Undo</span>
-              </button>
-            </div>
-          )}
-
-          {/* Offered Typed Input Notice */}
-          {offeredTypedInput && (
-            <div className="mx-4 p-3 rounded-xl bg-amber-950/80 border border-amber-800 text-amber-200 text-xs flex items-center justify-between">
-              <span>Having trouble capturing voice? Type your response below or tap the mic to retry.</span>
-              <button onClick={handleMicTap} className="px-2 py-1 bg-amber-900 hover:bg-amber-800 rounded text-amber-100 font-semibold">
-                Tap Mic
-              </button>
-            </div>
-          )}
-
-          {/* Bottom Voice Controls & Input Bar */}
+          {/* Bottom Controls Bar */}
           <div className="p-4 border-t border-slate-800 bg-slate-950/80 space-y-3">
-            {/* VAD Status & Pulsing Mic Button */}
             <div className="flex items-center justify-center space-x-4">
               <button
                 type="button"
@@ -596,7 +674,6 @@ export const VoiceChat = () => {
                     ? 'bg-indigo-600 text-white animate-pulse'
                     : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                 }`}
-                title={submissionStatus === 'submitted' ? 'Form submitted (read-only)' : isListening ? 'Click to pause mic' : 'Click to activate mic & reset counter'}
               >
                 {isListening ? <Mic className="w-7 h-7" /> : <MicOff className="w-7 h-7" />}
               </button>
@@ -619,17 +696,41 @@ export const VoiceChat = () => {
               </div>
             </div>
 
-            {/* Manual Text Input & Navigation Bar */}
+            {/* Input Bar with Paperclip Attach Button */}
             <form onSubmit={handleSendText} className="flex items-center space-x-2 pt-2">
               <button
                 type="button"
                 onClick={handleBackButton}
                 disabled={currentIndex === 0 || submissionStatus === 'submitted'}
-                className="p-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 rounded-xl transition-colors flex items-center space-x-1 text-xs font-semibold"
-                title="Go back to previous question"
+                className="p-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 rounded-xl transition-colors flex items-center space-x-1 text-xs font-semibold"
+                title="Go back"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">Back</span>
+              </button>
+
+              {/* Hidden File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    handleUploadFile(e.target.files[0]);
+                  }
+                }}
+              />
+
+              {/* Attach Paperclip Button */}
+              <button
+                type="button"
+                disabled={submissionStatus === 'submitted' || docUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 bg-indigo-950/80 border border-indigo-700/60 hover:bg-indigo-900 text-indigo-300 hover:text-white disabled:opacity-40 rounded-xl transition-colors flex items-center space-x-1"
+                title="Attach Document (.pdf, .docx)"
+              >
+                <Paperclip className="w-4 h-4" />
               </button>
 
               <input
@@ -643,15 +744,15 @@ export const VoiceChat = () => {
                     ? 'Form has already been submitted.'
                     : mode === 'editing' && activeEditingField
                     ? `Type updated ${activeEditingField.field_name.replace('_', ' ')}...`
-                    : "Or type your response manually here..."
+                    : "Type response or 'accept all'..."
                 }
-                className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none placeholder-slate-500 disabled:opacity-50"
               />
 
               <button
                 type="submit"
                 disabled={submissionStatus === 'submitted'}
-                className="p-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+                className="p-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -659,45 +760,152 @@ export const VoiceChat = () => {
           </div>
         </div>
 
-        {/* RIGHT: Live Form Panel */}
-        <div className="hidden lg:flex w-96 bg-slate-900 border border-slate-800 rounded-3xl flex-col shadow-2xl p-6 space-y-6 overflow-y-auto">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        {/* RIGHT: Live Form & Proposals Panel */}
+        <div className="hidden lg:flex w-96 bg-[#022B3A] border border-[#1F7A8C]/40 rounded-3xl flex-col shadow-2xl p-6 space-y-6 overflow-y-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-[#1F7A8C]/30 pb-4">
             <div>
-              <h3 className="font-bold text-white text-base">Live Form Panel</h3>
-              <p className="text-xs text-slate-400">
-                {submissionStatus === 'submitted' ? 'Form submitted (read-only)' : 'Click pencil to redo any field.'}
+              <h3 className="font-bold text-[#FFFFFF] text-base">Live Form & Proposals</h3>
+              <p className="text-xs text-[#E1E5F2]">
+                {submissionStatus === 'submitted' ? 'Form submitted (read-only)' : 'Confirm extracted proposals or edit.'}
               </p>
             </div>
-            <div className="px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-lg text-xs font-mono font-bold">
+            <div className="px-2.5 py-1 bg-[#1F7A8C]/30 text-[#BFDBF7] border border-[#1F7A8C] rounded-lg text-xs font-mono font-bold">
               {Object.keys(answers).length} / {fields.length}
             </div>
           </div>
 
-          {/* Fields List */}
+          {/* Document Proposals Section */}
+          {proposals.length > 0 && submissionStatus !== 'submitted' && (
+            <div className="p-4 rounded-2xl bg-indigo-950/70 border border-indigo-800/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-indigo-200 uppercase tracking-wider flex items-center space-x-1.5">
+                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  <span>Document Proposals ({proposals.length})</span>
+                </span>
+
+                {eligibleAcceptAllCount > 0 && (
+                  <button
+                    onClick={() => handleAcceptProposals(null)}
+                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg flex items-center space-x-1 shadow transition-colors"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    <span>Accept All ({eligibleAcceptAllCount})</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {proposals.map((prop) => (
+                  <div key={prop.id} className="p-3 bg-slate-900/90 border border-indigo-900/80 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-indigo-300">{prop.field_name?.replace('_', ' ')}</span>
+                      <span className="font-mono text-[10px] text-slate-400">
+                        Page {prop.page || 1} • {prop.read_method}
+                      </span>
+                    </div>
+
+                    <p className="text-sm font-bold text-white bg-slate-950 p-2 rounded border border-slate-800">
+                      {prop.value}
+                    </p>
+
+                    {/* Scanned Warning Badge */}
+                    {prop.scanned_warning && (
+                      <div className="p-1.5 bg-amber-950/80 border border-amber-800/80 text-amber-300 text-[11px] rounded flex items-center space-x-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{prop.scanned_warning}</span>
+                      </div>
+                    )}
+
+                    {/* Excluded from Accept All Note */}
+                    {prop.is_excluded_from_accept_all && (
+                      <p className="text-[10px] text-amber-400/80 italic font-mono">
+                        *Scanned value: verify & accept individually.
+                      </p>
+                    )}
+
+                    {/* Evidence / Quote */}
+                    {prop.evidence && (
+                      <p className="text-[11px] text-slate-400 italic">
+                        "{prop.evidence}"
+                      </p>
+                    )}
+
+                    {/* Alternative Choices */}
+                    {prop.alternatives && prop.alternatives.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        <span className="text-[10px] text-slate-400">Alts:</span>
+                        {prop.alternatives.map((alt, aIdx) => (
+                          <button
+                            key={aIdx}
+                            onClick={() => {
+                              setEditingProposal(prop);
+                              setEditingProposalVal(alt);
+                            }}
+                            className="px-1.5 py-0.5 bg-slate-800 hover:bg-indigo-900 text-indigo-300 text-[10px] rounded border border-slate-700"
+                          >
+                            {alt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Proposal Action Buttons */}
+                    <div className="flex items-center justify-end space-x-2 pt-1 border-t border-slate-800">
+                      <button
+                        onClick={() => handleDismissProposal(prop.id)}
+                        className="px-2 py-1 bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-300 text-xs rounded flex items-center space-x-1"
+                        title="Dismiss proposal"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>Dismiss</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingProposal(prop);
+                          setEditingProposalVal(prop.value);
+                        }}
+                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded flex items-center space-x-1"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleAcceptProposals([prop.id])}
+                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded flex items-center space-x-1"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Accept</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Form Fields List */}
           <div className="space-y-3 flex-1">
             {fields.map((field) => {
               const isCurrent = currentField?.id === field.id;
               const isEditingThis = mode === 'editing' && editingFieldId === field.id;
               const hasAnswer = answers[field.id] !== undefined && answers[field.id] !== null && String(answers[field.id]).trim() !== '';
-              const isUpdated = updatedFieldId === field.id;
 
               return (
                 <div
                   key={field.id}
                   className={`p-4 rounded-2xl border transition-all ${
                     isEditingThis
-                      ? 'bg-amber-950/60 border-amber-500 shadow-lg shadow-amber-950/50 scale-[1.02]'
-                      : isUpdated
-                      ? 'bg-emerald-950/60 border-emerald-500 animate-bounce'
+                      ? 'bg-[#1F7A8C]/50 border-[#BFDBF7] shadow-lg scale-[1.02]'
                       : isCurrent
-                      ? 'bg-indigo-950/60 border-indigo-600 shadow-lg shadow-indigo-950/50'
+                      ? 'bg-[#1F7A8C]/30 border-[#1F7A8C] shadow-lg'
                       : hasAnswer
-                      ? 'bg-slate-950 border-slate-800/80'
-                      : 'bg-slate-950/40 border-slate-800/40 opacity-60'
+                      ? 'bg-[#022B3A] border-[#1F7A8C]/40'
+                      : 'bg-[#022B3A]/60 border-[#1F7A8C]/20 opacity-60'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-slate-300 flex items-center space-x-1.5">
+                    <span className="text-xs font-semibold text-[#E1E5F2] flex items-center space-x-1.5">
                       <span>{field.field_name.replace('_', ' ')}</span>
                       {hasAnswer && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
                     </span>
@@ -720,8 +928,8 @@ export const VoiceChat = () => {
                       type="button"
                       onClick={() => handleGotoField(field.id)}
                       disabled={submissionStatus === 'submitted'}
-                      className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
-                      title={submissionStatus === 'submitted' ? 'Form submitted (read-only)' : `Redo ${field.field_name.replace('_', ' ')}`}
+                      className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 disabled:opacity-30 rounded transition-colors"
+                      title={`Redo ${field.field_name.replace('_', ' ')}`}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
@@ -736,15 +944,6 @@ export const VoiceChat = () => {
             <button
               onClick={handleCompleteSubmission}
               disabled={submitting || mode === 'editing' || !allAnswered || submissionStatus === 'submitted'}
-              title={
-                submissionStatus === 'submitted'
-                  ? 'Form has already been submitted.'
-                  : mode === 'editing'
-                  ? 'Finish or cancel editing active field before submitting.'
-                  : !allAnswered
-                  ? 'Complete all required questions to submit.'
-                  : 'Submit completed form'
-              }
               className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submissionStatus === 'submitted' ? (
@@ -759,74 +958,43 @@ export const VoiceChat = () => {
                 </>
               )}
             </button>
-            {mode === 'editing' && (
-              <p className="text-[11px] text-amber-400 text-center font-mono">
-                Editing active field — complete or cancel to submit.
-              </p>
-            )}
-            {submissionStatus === 'submitted' && (
-              <p className="text-[11px] text-emerald-400 text-center font-mono">
-                Form is submitted. Submissions are read-only.
-              </p>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Latency & Filter Debug Panel (Fix 4) */}
-      {debugPanelOpen && (
-        <div className="bg-slate-900 border-t border-slate-800 p-4 text-xs font-mono text-slate-300 flex flex-col space-y-2">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span className="text-indigo-400 font-bold">Voice Pipeline Debugger (Fix 4):</span>
-            <button onClick={() => setDebugPanelOpen(false)} className="text-slate-500 hover:text-white">
-              Close
-            </button>
-          </div>
+      {/* Edit Proposal Value Modal */}
+      {editingProposal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+          <form onSubmit={handleEditProposalSubmit} className="max-w-md w-full bg-slate-900 border border-indigo-900/80 rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-white">Edit Proposal Value</h3>
+            <p className="text-xs text-indigo-300">Field: {editingProposal.field_name}</p>
 
-          {latestTiming ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
-              <div>
-                <span className="text-slate-500 block">Raw Transcript:</span>
-                <strong className="text-white truncate block">{latestTiming.raw_transcript || 'N/A'}</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Filter Status:</span>
-                <strong className={latestTiming.filter_status === 'clean' ? 'text-emerald-400' : 'text-amber-400'}>
-                  {latestTiming.filter_status || 'clean'}
-                </strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Command vs Answer:</span>
-                <strong className="text-purple-300">{latestTiming.command_versus_answer || 'answer'}</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Counted as Failure:</span>
-                <strong className={latestTiming.counted_as_failure ? 'text-red-400' : 'text-slate-400'}>
-                  {latestTiming.counted_as_failure ? 'YES (Failed Turn)' : 'NO'}
-                </strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Normalized Text:</span>
-                <strong className="text-indigo-300 truncate block">{latestTiming.normalized_text || 'N/A'}</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Grounding Status:</span>
-                <strong className={latestTiming.grounding_result === 'grounded' ? 'text-emerald-400' : 'text-red-400'}>
-                  {latestTiming.grounding_result || 'N/A'}
-                </strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">STT Latency:</span>
-                <strong className="text-white">{latestTiming.stt_ms}ms</strong>
-              </div>
-              <div>
-                <span className="text-slate-500 block">LLM Latency:</span>
-                <strong className="text-white">{latestTiming.llm_ms}ms</strong>
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs text-slate-400 font-mono">Value</label>
+              <input
+                type="text"
+                value={editingProposalVal}
+                onChange={(e) => setEditingProposalVal(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none"
+              />
             </div>
-          ) : (
-            <p className="text-slate-500 italic">No turn processed yet. Speak into mic or submit text to inspect debug state.</p>
-          )}
+
+            <div className="flex justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setEditingProposal(null)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 shadow"
+              >
+                Save & Accept
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

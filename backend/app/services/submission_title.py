@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Submission, Form
 
@@ -9,8 +9,8 @@ async def compute_submission_title(
     form_title: Optional[str] = None
 ) -> str:
     """
-    Computes submission title formatted like: <form_title>-<submission_number>
-    e.g. hospital-1, hospital-2, general form-1
+    Computes submission title formatted like: <form_title>
+    e.g. hospital, general form
     """
     if not form_title:
         if sub.form and sub.form.title:
@@ -21,14 +21,7 @@ async def compute_submission_title(
             res = await db.execute(select(Form.title).where(Form.id == sub.form_id))
             form_title = res.scalar_one_or_none() or "form"
 
-    res_count = await db.execute(
-        select(func.count(Submission.id)).where(
-            Submission.form_id == sub.form_id,
-            Submission.id <= sub.id
-        )
-    )
-    sub_num = res_count.scalar() or 1
-    return f"{form_title.lower()}-{sub_num}"
+    return form_title.lower()
 
 async def compute_submission_titles_batch(
     db: AsyncSession,
@@ -36,7 +29,7 @@ async def compute_submission_titles_batch(
 ) -> Dict[int, str]:
     """
     Batch computes submission titles for a list of Submission objects.
-    Returns mapping from submission.id to title string (e.g. {1: "hospital-1", 2: "hospital-2"}).
+    Returns mapping from submission.id to title string (e.g. {1: "hospital", 2: "hospital"}).
     """
     if not submissions:
         return {}
@@ -56,21 +49,9 @@ async def compute_submission_titles_batch(
         for fid, title in res.all():
             form_titles[fid] = title
 
-    form_sub_numbers: Dict[tuple, int] = {}
-    for fid in form_ids:
-        res_subs = await db.execute(
-            select(Submission.id)
-            .where(Submission.form_id == fid)
-            .order_by(Submission.id.asc())
-        )
-        sub_ids = res_subs.scalars().all()
-        for idx, sid in enumerate(sub_ids, start=1):
-            form_sub_numbers[(fid, sid)] = idx
-
     title_map: Dict[int, str] = {}
     for s in submissions:
         title = form_titles.get(s.form_id, "form")
-        num = form_sub_numbers.get((s.form_id, s.id), 1)
-        title_map[s.id] = f"{title.lower()}-{num}"
+        title_map[s.id] = title.lower()
 
     return title_map

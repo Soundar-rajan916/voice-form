@@ -12,7 +12,7 @@ from app.models import User, Form, FormVersion, FormField, Submission, Submissio
 from app.schemas import (
     FormCreate, FormUpdate, FormResponse, FormDetailResponse,
     FormVersionResponse, FormFieldResponse, SubmissionDetailResponse,
-    SubmissionAnswerResponse
+    SubmissionAnswerResponse, SubmissionProposalResponse
 )
 from app.deps import require_admin
 from app.services.questions import generate_field_questions
@@ -52,6 +52,7 @@ async def create_form(
         title=form_in.title,
         description=form_in.description,
         status="draft",
+        allow_document_upload=form_in.allow_document_upload,
         created_by=current_user.id
     )
     db.add(form)
@@ -98,6 +99,7 @@ async def create_form(
         title=form_obj.title,
         description=form_obj.description,
         status=form_obj.status,
+        allow_document_upload=form_obj.allow_document_upload,
         created_by=form_obj.created_by,
         created_at=form_obj.created_at,
         updated_at=form_obj.updated_at,
@@ -109,7 +111,7 @@ async def list_admin_forms(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(
+    result = await db.execute(                 
         select(Form)
         .options(selectinload(Form.versions).selectinload(FormVersion.fields))
         .order_by(Form.updated_at.desc())
@@ -128,6 +130,7 @@ async def list_admin_forms(
                 title=f.title,
                 description=f.description,
                 status=f.status,
+                allow_document_upload=f.allow_document_upload,
                 created_by=f.created_by,
                 created_at=f.created_at,
                 updated_at=f.updated_at,
@@ -159,6 +162,7 @@ async def get_admin_form(
         title=form.title,
         description=form.description,
         status=form.status,
+        allow_document_upload=form.allow_document_upload,
         created_by=form.created_by,
         created_at=form.created_at,
         updated_at=form.updated_at,
@@ -186,6 +190,8 @@ async def update_form(
         form.title = form_in.title
     if form_in.description is not None:
         form.description = form_in.description
+    if form_in.allow_document_upload is not None:
+        form.allow_document_upload = form_in.allow_document_upload
 
     if form_in.fields is not None:
         sub_count_res = await db.execute(
@@ -242,6 +248,7 @@ async def update_form(
         title=updated_form.title,
         description=updated_form.description,
         status=updated_form.status,
+        allow_document_upload=updated_form.allow_document_upload,
         created_by=updated_form.created_by,
         created_at=updated_form.created_at,
         updated_at=updated_form.updated_at,
@@ -298,6 +305,7 @@ async def publish_form(
         title=pub_form.title,
         description=pub_form.description,
         status=pub_form.status,
+        allow_document_upload=pub_form.allow_document_upload,
         created_by=pub_form.created_by,
         created_at=pub_form.created_at,
         updated_at=pub_form.updated_at,
@@ -337,11 +345,31 @@ async def archive_form(
         title=arch_form.title,
         description=arch_form.description,
         status=arch_form.status,
+        allow_document_upload=arch_form.allow_document_upload,
         created_by=arch_form.created_by,
         created_at=arch_form.created_at,
         updated_at=arch_form.updated_at,
         current_version=FormVersionResponse.model_validate(latest_version) if latest_version else None
     )
+
+@router.delete("/{form_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_form_permanently(
+    form_id: int,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Hard delete endpoint: Permanently removes a form and all associated versions,
+    fields, submissions, answers, and proposals from the database.
+    """
+    result = await db.execute(select(Form).where(Form.id == form_id))
+    form = result.scalar_one_or_none()
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+
+    await db.delete(form)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.get("/{form_id}/submissions", response_model=List[SubmissionDetailResponse])
 async def get_admin_form_submissions(
@@ -356,6 +384,7 @@ async def get_admin_form_submissions(
             selectinload(Submission.form),
             selectinload(Submission.version).selectinload(FormVersion.fields),
             selectinload(Submission.answers),
+            selectinload(Submission.proposals),
             selectinload(Submission.user)
         )
         .where(Submission.form_id == form_id)
@@ -371,9 +400,40 @@ async def get_admin_form_submissions(
     title_map = await compute_submission_titles_batch(db, submissions)
 
     result = []
+    sensitive_types = {"Email", "Phone", "Number", "Date"}
+
     for s in submissions:
         ver_fields = s.version.fields if s.version else []
+        field_map = {f.id: f for f in ver_fields}
         sub_title = title_map.get(s.id, f"submission-{s.id}")
+
+        prop_resps = []
+        for prop in (s.proposals or []):
+            f_obj = field_map.get(prop.field_id)
+            f_type = f_obj.data_type if f_obj else "String"
+            is_scanned = (prop.read_method == "vision")
+            is_excluded = is_scanned and (f_type in sensitive_types)
+            scanned_warn = "Read from a scanned page. Check this one." if is_scanned else None
+
+            prop_resps.append(
+                SubmissionProposalResponse(
+                    id=prop.id,
+                    submission_id=prop.submission_id,
+                    field_id=prop.field_id,
+                    field_name=f_obj.field_name if f_obj else f"field_{prop.field_id}",
+                    value=prop.value,
+                    confidence=prop.confidence,
+                    evidence=prop.evidence,
+                    page=prop.page,
+                    read_method=prop.read_method,
+                    status=prop.status,
+                    alternatives=prop.alternatives or [],
+                    is_excluded_from_accept_all=is_excluded,
+                    scanned_warning=scanned_warn,
+                    created_at=prop.created_at
+                )
+            )
+
         result.append(
             SubmissionDetailResponse(
                 id=s.id,
@@ -388,6 +448,7 @@ async def get_admin_form_submissions(
                 submission_title=sub_title,
                 submission_name=sub_title,
                 answers=[SubmissionAnswerResponse.model_validate(a) for a in s.answers],
+                proposals=prop_resps,
                 fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
             )
         )
@@ -428,7 +489,7 @@ async def export_submissions_csv(
 
     writer.writerow([
         "Submission Title", "Submission ID", "User Email", "Version Number", "Status",
-        "Started At", "Completed At", "Field Name", "Cleaned Value", "Raw Transcript"
+        "Started At", "Completed At", "Field Name", "Cleaned Value", "Answer Source", "Raw Transcript"
     ])
 
     for s in submissions:
@@ -439,12 +500,13 @@ async def export_submissions_csv(
         for f in fields:
             ans = answers_by_field.get(f.id)
             val = ans.value if ans else ""
+            src = ans.source if ans else ""
             raw = ans.raw_transcript if ans else ""
             writer.writerow([
                 sub_title, s.id, s.user.email if s.user else "", v_num, s.status,
                 s.started_at.isoformat() if s.started_at else "",
                 s.completed_at.isoformat() if s.completed_at else "",
-                f.field_name, val, raw
+                f.field_name, val, src, raw
             ])
 
     output.seek(0)

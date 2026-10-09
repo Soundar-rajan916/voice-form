@@ -1,45 +1,146 @@
 @import "tailwindcss";
 
+:root {
+  --deep-space-blue: #0b3954;
+  --teal: #087e8b;
+  --pale-sky: #bfd7ea;
+  --vibrant-coral: #ff5a5f;
+  --flag-red: #c81d25;
+  --white: #ffffff;
+}
+
 @layer base {
   body {
+    background-color: #0b3954;
+    color: #ffffff;
     font-family: 'Inter', 'Noto Sans Tamil', system-ui, -apple-system, sans-serif;
   }
 }
 
-/* Custom scrollbars and animations */
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: #0b3954;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.8);
+  background: #087e8b;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(71, 85, 105, 1);
+  background: #bfd7ea;
 }
 
 @keyframes pulse-ring {
   0% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    box-shadow: 0 0 0 0 rgba(8, 126, 139, 0.7);
   }
+
   70% {
     transform: scale(1.05);
-    box-shadow: 0 0 0 14px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 14px rgba(8, 126, 139, 0);
   }
+
   100% {
     transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 0 rgba(8, 126, 139, 0);
   }
 }
 
 .animate-pulse-ring {
   animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Neumorphism (Soft UI) Classes - Calibrated for Deep Space Blue (#0b3954) */
+.neu-flat {
+  background: #0b3954;
+  box-shadow: 8px 8px 18px #051b28, -8px -8px 18px #115780;
+  border-radius: 1.5rem;
+}
+
+.neu-inset {
+  background: #0b3954;
+  box-shadow: inset 4px 4px 8px #051b28, inset -4px -4px 8px #115780;
+  border-radius: 0.75rem;
+}
+
+.neu-button {
+  background: #0b3954;
+  box-shadow: 5px 5px 10px #051b28, -5px -5px 10px #115780;
+  transition: all 0.2s ease;
+  border-radius: 0.75rem;
+}
+
+.neu-button:hover {
+  box-shadow: 7px 7px 14px #051b28, -7px -7px 14px #115780;
+}
+
+.neu-button-pressed,
+.neu-button:active {
+  background: #0b3954;
+  box-shadow: inset 3px 3px 6px #051b28, inset -3px -3px 6px #115780;
+}
+
+.neu-accent-button {
+  background: linear-gradient(145deg, #087e8b, #066570);
+  box-shadow: 5px 5px 12px #051b28, -5px -5px 12px #115780;
+  transition: all 0.2s ease;
+  color: #ffffff;
+  border-radius: 0.75rem;
+}
+
+.neu-accent-button:hover {
+  box-shadow: 7px 7px 15px #051b28, -7px -7px 15px #115780;
+  background: linear-gradient(145deg, #0a91a1, #087e8b);
+}
+
+.neu-accent-button:active {
+  box-shadow: inset 3px 3px 6px #044850, inset -3px -3px 6px #0cb4c6;
+}
+
+.neu-coral-button {
+  background: linear-gradient(145deg, #ff5a5f, #e04a4f);
+  box-shadow: 5px 5px 12px #051b28, -5px -5px 12px #115780;
+  transition: all 0.2s ease;
+  color: #ffffff;
+  border-radius: 0.75rem;
+}
+
+.neu-coral-button:hover {
+  box-shadow: 7px 7px 15px #051b28, -7px -7px 15px #115780;
+  background: linear-gradient(145deg, #ff7074, #ff5a5f);
+}
+
+.neu-coral-button:active {
+  box-shadow: inset 3px 3px 6px #aa3538, inset -3px -3px 6px #ff8084;
+}
+
+.neu-pill {
+  background: #0b3954;
+  box-shadow: 4px 4px 8px #051b28, -4px -4px 8px #115780;
+  border-radius: 9999px;
+}
+
+.neu-circle {
+  background: #0b3954;
+  box-shadow: 6px 6px 12px #051b28, -6px -6px 12px #115780;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.neu-circle-pressed {
+  background: #0b3954;
+  box-shadow: inset 4px 4px 8px #051b28, inset -4px -4px 8px #115780;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

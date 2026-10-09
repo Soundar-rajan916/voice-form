@@ -25,6 +25,7 @@ async def register(user_in: UserRegister, db: AsyncSession = Depends(get_db)):
     # CRITICAL: Always hardcode role to 'user'. Registration CANNOT create an admin.
     new_user = User(
         email=user_in.email.lower().strip(),
+        username=user_in.username.strip() if user_in.username else None,
         hashed_password=hash_password(user_in.password),
         role="user"
     )
@@ -71,7 +72,11 @@ async def login(
             detail="Too many login attempts. Please try again in a minute."
         )
 
-    result = await db.execute(select(User).where(User.email == email))
+    result = await db.execute(
+        select(User).where(
+            (User.email == email) | (User.username == email)
+        )
+    )
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(password, user.hashed_password):

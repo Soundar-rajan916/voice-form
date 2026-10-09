@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Any
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # --- AUTH SCHEMAS ---
 class UserRegister(BaseModel):
     email: EmailStr
+    username: Optional[str] = None
     password: str = Field(..., min_length=6)
 
 class UserLogin(BaseModel):
@@ -14,6 +15,7 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: str
+    username: Optional[str] = None
     role: str
     created_at: datetime
 
@@ -69,11 +71,13 @@ class FormVersionResponse(BaseModel):
 class FormCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    allow_document_upload: bool = True
     fields: List[FormFieldCreate] = []
 
 class FormUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    allow_document_upload: Optional[bool] = None
     fields: Optional[List[FormFieldCreate]] = None
 
 class FormResponse(BaseModel):
@@ -81,6 +85,7 @@ class FormResponse(BaseModel):
     title: str
     description: Optional[str] = None
     status: str
+    allow_document_upload: bool = True
     created_by: int
     created_at: datetime
     updated_at: datetime
@@ -94,12 +99,49 @@ class FormDetailResponse(BaseModel):
     title: str
     description: Optional[str] = None
     status: str
+    allow_document_upload: bool = True
     created_by: int
     created_at: datetime
     updated_at: datetime
     current_version: Optional[FormVersionResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+# --- PROPOSAL SCHEMAS ---
+class SubmissionProposalResponse(BaseModel):
+    id: int
+    submission_id: int
+    field_id: int
+    field_name: Optional[str] = None
+    value: str
+    confidence: float
+    evidence: Optional[str] = None
+    page: Optional[int] = None
+    read_method: str = "text_layer" # "text_layer" or "vision"
+    status: str = "pending" # "pending", "accepted", "dismissed"
+    alternatives: Optional[List[Any]] = None
+    is_excluded_from_accept_all: Optional[bool] = False
+    scanned_warning: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DocumentUploadResponse(BaseModel):
+    submission_id: int
+    extracted_count: int
+    proposals: List[SubmissionProposalResponse] = []
+    warning: Optional[str] = None
+    message: Optional[str] = None
+
+class AcceptProposalsRequest(BaseModel):
+    proposal_ids: Optional[List[int]] = None # None or empty means accept all eligible
+
+class DismissProposalRequest(BaseModel):
+    proposal_id: int
+
+class EditProposalRequest(BaseModel):
+    proposal_id: int
+    new_value: str
 
 # --- SUBMISSION SCHEMAS ---
 class SubmissionAnswerCreate(BaseModel):
@@ -115,6 +157,9 @@ class SubmissionAnswerResponse(BaseModel):
     value: Optional[str] = None
     raw_transcript: Optional[str] = None
     language: Optional[str] = None
+    source: Optional[str] = "typed" # "voice", "typed", "document"
+    evidence: Optional[str] = None
+    source_confidence: Optional[float] = None
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -151,6 +196,7 @@ class SubmissionDetailResponse(BaseModel):
     all_answered: Optional[bool] = False
     can_edit: Optional[bool] = True
     answers: List[SubmissionAnswerResponse] = []
+    proposals: List[SubmissionProposalResponse] = []
     fields: List[FormFieldResponse] = []
 
     model_config = ConfigDict(from_attributes=True)

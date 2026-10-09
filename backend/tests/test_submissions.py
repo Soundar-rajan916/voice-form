@@ -117,35 +117,34 @@ async def test_submission_name_formatting(client: AsyncClient, admin_token_heade
     f2_id = f2_resp.json()["id"]
     await client.post(f"/admin/forms/{f2_id}/publish", headers=admin_token_headers)
 
-    # 3. Create sub 1 for hospital -> hospital-1
+    # 3. Create sub 1 for hospital -> hospital
     sub1_res = await client.post(f"/forms/{f1_id}/submissions", headers=user_token_headers)
     assert sub1_res.status_code == 201
     sub1_data = sub1_res.json()
-    assert sub1_data["submission_title"] == "hospital-1"
-    assert sub1_data["submission_name"] == "hospital-1"
+    assert sub1_data["submission_title"] == "hospital"
+    assert sub1_data["submission_name"] == "hospital"
 
-    # 4. Create sub 2 for hospital -> hospital-2
+    # 4. Create sub 2 for hospital -> hospital
     sub2_res = await client.post(f"/forms/{f1_id}/submissions", headers=user_token_headers)
     assert sub2_res.status_code == 201
     sub2_data = sub2_res.json()
-    assert sub2_data["submission_title"] == "hospital-2"
-    assert sub2_data["submission_name"] == "hospital-2"
+    assert sub2_data["submission_title"] == "hospital"
+    assert sub2_data["submission_name"] == "hospital"
 
-    # 5. Create sub 1 for General Form -> general form-1
+    # 5. Create sub 1 for General Form -> general form
     sub3_res = await client.post(f"/forms/{f2_id}/submissions", headers=user_token_headers)
     assert sub3_res.status_code == 201
     sub3_data = sub3_res.json()
-    assert sub3_data["submission_title"] == "general form-1"
-    assert sub3_data["submission_name"] == "general form-1"
+    assert sub3_data["submission_title"] == "general form"
+    assert sub3_data["submission_name"] == "general form"
 
     # 6. Verify list_user_submissions returns formatted names
     list_res = await client.get("/submissions", headers=user_token_headers)
     assert list_res.status_code == 200
     list_data = list_res.json()
     titles = [s["submission_title"] for s in list_data]
-    assert "hospital-1" in titles
-    assert "hospital-2" in titles
-    assert "general form-1" in titles
+    assert "hospital" in titles
+    assert "general form" in titles
 
 
 @pytest.mark.asyncio

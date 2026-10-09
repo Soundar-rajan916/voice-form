@@ -58,29 +58,29 @@ export const UserHome = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#0B3954] text-[#FFFFFF] flex flex-col">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         {/* Banner */}
-        <div className="bg-gradient-to-r from-indigo-900/60 via-purple-900/40 to-slate-900 border border-indigo-800/50 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        <div className="neu-flat p-8 relative overflow-hidden">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 text-xs font-semibold mb-4">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <div className="inline-flex items-center space-x-2 px-3 py-1 neu-pill text-[#BFD7EA] text-xs font-semibold mb-4">
+              <Sparkles className="w-3.5 h-3.5 text-[#FF5A5F]" />
               <span>Voice-Driven Conversational AI</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-3">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#FFFFFF] tracking-tight mb-3">
               Fill Forms Naturally via Voice in Tamil & English
             </h1>
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-[#BFD7EA] leading-relaxed">
               Select a form below to start an interactive chatbot voice session. The bot asks questions one by one, listens to your spoken Tamil or English response, extracts clean values, and updates your form live.
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="p-4 rounded-xl bg-red-950/80 border border-red-800/80 text-red-200 text-xs flex items-center space-x-3">
-            <AlertCircle className="w-4 h-4 text-red-400" />
+          <div className="p-4 neu-inset text-[#FF5A5F] text-xs flex items-center space-x-3 border-l-4 border-[#C81D25]">
+            <AlertCircle className="w-4 h-4 text-[#FF5A5F]" />
             <span>{error}</span>
           </div>
         )}
@@ -88,37 +88,37 @@ export const UserHome = () => {
         {/* Section 1: Published Forms */}
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-              <FileText className="w-5 h-5 text-indigo-400" />
+            <h2 className="text-xl font-bold text-[#FFFFFF] flex items-center space-x-2">
+              <FileText className="w-5 h-5 text-[#BFD7EA]" />
               <span>Available Voice Forms</span>
             </h2>
           </div>
 
           {loading ? (
-            <div className="py-12 flex flex-col items-center text-slate-400">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-3" />
+            <div className="py-12 flex flex-col items-center text-[#BFD7EA]">
+              <Loader2 className="w-8 h-8 animate-spin text-[#087E8B] mb-3" />
               <p className="text-xs">Fetching published forms...</p>
             </div>
           ) : publishedForms.length === 0 ? (
-            <div className="text-center py-12 bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-              <p className="text-sm text-slate-400">No published forms available at the moment.</p>
+            <div className="text-center py-12 neu-inset p-6">
+              <p className="text-sm text-[#BFD7EA]/70">No published forms available at the moment.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {publishedForms.map((form) => (
                 <div
                   key={form.id}
-                  className="bg-slate-900 border border-slate-800 hover:border-indigo-700/80 rounded-2xl p-6 shadow-xl transition-all flex flex-col justify-between group"
+                  className="neu-flat p-6 transition-all flex flex-col justify-between group hover:scale-[1.01]"
                 >
                   <div>
-                    <h3 className="font-bold text-lg text-white mb-2 group-hover:text-indigo-300 transition-colors">
+                    <h3 className="font-bold text-lg text-[#FFFFFF] mb-2 group-hover:text-[#BFD7EA] transition-colors">
                       {form.title}
                     </h3>
-                    <p className="text-xs text-slate-400 line-clamp-2 mb-4">
+                    <p className="text-xs text-[#BFD7EA] line-clamp-2 mb-4">
                       {form.description || 'Voice-driven form survey.'}
                     </p>
 
-                    <div className="flex items-center space-x-4 text-xs font-mono text-slate-400 mb-6">
+                    <div className="flex items-center space-x-4 text-xs font-mono text-[#BFD7EA] mb-6">
                       <span>Version: v{form.latest_version_number}</span>
                       <span>•</span>
                       <span>{form.field_count} Fields</span>
@@ -128,16 +128,16 @@ export const UserHome = () => {
                   <button
                     onClick={() => handleStartForm(form.id)}
                     disabled={startingFormId === form.id}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+                    className="w-full py-3.5 px-4 neu-accent-button font-semibold text-sm flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
                   >
                     {startingFormId === form.id ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin text-[#FFFFFF]" />
                         <span>Starting Session...</span>
                       </>
                     ) : (
                       <>
-                        <Mic className="w-4 h-4 text-indigo-200" />
+                        <Mic className="w-4 h-4 text-[#BFD7EA]" />
                         <span>Start Voice Session</span>
                       </>
                     )}
@@ -149,19 +149,19 @@ export const UserHome = () => {
         </section>
 
         {/* Section 2: User Submission History */}
-        <section className="pt-6 border-t border-slate-800">
+        <section className="pt-6 border-t border-[#051B28]/50">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-              <Clock className="w-5 h-5 text-purple-400" />
+            <h2 className="text-xl font-bold text-[#FFFFFF] flex items-center space-x-2">
+              <Clock className="w-5 h-5 text-[#BFD7EA]" />
               <span>Your Submission History</span>
             </h2>
           </div>
 
           {loading ? (
-            <div className="py-8 text-center text-slate-400 text-xs">Loading history...</div>
+            <div className="py-8 text-center text-[#BFD7EA] text-xs">Loading history...</div>
           ) : submissions.length === 0 ? (
-            <div className="text-center py-8 bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
-              <p className="text-xs text-slate-400">You haven't completed any form submissions yet.</p>
+            <div className="text-center py-8 neu-inset p-6">
+              <p className="text-xs text-[#BFD7EA]/70">You haven't completed any form submissions yet.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -170,28 +170,22 @@ export const UserHome = () => {
                 return (
                   <div
                     key={sub.id}
-                    className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg hover:border-slate-700 transition-colors"
+                    className="neu-flat p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors"
                   >
                     <div>
                       <div className="flex items-center space-x-3 mb-1">
-                        <span className="font-bold text-white text-base">
+                        <span className="font-bold text-[#FFFFFF] text-base">
                           {sub.submission_title || sub.submission_name || `Submission #${sub.id}`}
                         </span>
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                            isSubmitted
-                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                              : 'bg-amber-950 text-amber-400 border border-amber-800'
-                          }`}
-                        >
+                        <span className="px-3 py-0.5 neu-pill text-xs font-semibold uppercase tracking-wider text-[#BFD7EA]">
                           {sub.status}
                         </span>
-                        <span className="text-xs font-mono text-purple-400">
+                        <span className="text-xs font-mono text-[#BFD7EA]">
                           v{sub.version_number}
                         </span>
                       </div>
 
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-[#BFD7EA]/80">
                         Started: {new Date(sub.started_at).toLocaleString()}
                       </p>
                     </div>
@@ -199,16 +193,16 @@ export const UserHome = () => {
                     <div className="flex items-center space-x-3">
                       <Link
                         to={`/fill/${sub.id}`}
-                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5"
+                        className="px-4 py-2 neu-button text-[#BFD7EA] hover:text-[#FFFFFF] text-xs font-semibold transition-colors flex items-center space-x-1.5"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4 text-[#BFD7EA]" />
                         <span>{isSubmitted ? 'View Submission' : 'Resume Session'}</span>
                       </Link>
 
                       {!isSubmitted && (
                         <button
                           onClick={() => handleDeleteSubmission(sub.id)}
-                          className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-colors"
+                          className="p-2 neu-button text-[#BFD7EA]/60 hover:text-[#FF5A5F] transition-colors cursor-pointer"
                           title="Delete Submission"
                         >
                           <Trash2 className="w-4 h-4" />

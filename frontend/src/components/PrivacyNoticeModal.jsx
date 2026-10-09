@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Info } from 'lucide-react';
+import React from 'react';
+import { ShieldCheck, FileText } from 'lucide-react';
 
 export const PrivacyNoticeModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -17,20 +17,19 @@ export const PrivacyNoticeModal = ({ isOpen, onClose }) => {
             <ShieldCheck className="w-6 h-6" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white">Voice Privacy Guarantee</h3>
-            <p className="text-xs text-indigo-400">Audio Security & Privacy</p>
+            <h3 className="text-lg font-bold text-white">Privacy Guarantee</h3>
+            <p className="text-xs text-indigo-400">Document & Audio Security</p>
           </div>
         </div>
 
         <div className="space-y-3 text-sm text-slate-300 bg-slate-950/60 p-4 rounded-xl border border-slate-800 mb-6">
           <p className="font-semibold text-indigo-300">
-            "Your voice is converted to text and not saved."
+            "Your document is read to fill this form and is deleted right after. Scanned pages are sent as images to our AI provider."
           </p>
           <ul className="space-y-2 text-xs text-slate-400 list-disc list-inside">
-            <li>Audio streams strictly in-memory during active speech recognition.</li>
-            <li>No audio recordings are ever written to disk, stored in databases, or logged.</li>
-            <li>Only extracted text transcripts and cleaned form answers are persisted.</li>
-            <li>Speech transcription is processed via Groq's high-speed Whisper cloud API.</li>
+            <li>Page images exist only in memory during processing and are never written to disk.</li>
+            <li>Document transcripts are used only to extract form proposals.</li>
+            <li>No document bytes or image data are stored after extraction finishes.</li>
           </ul>
         </div>
 

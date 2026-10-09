@@ -32,10 +32,10 @@ export async function apiRequest(endpoint, options = {}) {
 
 // Auth APIs
 export const authApi = {
-  register: (email, password) =>
+  register: (email, password, username) =>
     apiRequest('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, username: username || undefined }),
     }),
   login: (email, password) =>
     apiRequest('/auth/login', {
@@ -66,6 +66,10 @@ export const adminFormsApi = {
   archive: (id) =>
     apiRequest(`/admin/forms/${id}/archive`, {
       method: 'POST',
+    }),
+  delete: (id) =>
+    apiRequest(`/admin/forms/${id}`, {
+      method: 'DELETE',
     }),
   getSubmissions: (formId, versionId) => {
     const query = versionId ? `?version_id=${versionId}` : '';
