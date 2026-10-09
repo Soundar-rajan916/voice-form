@@ -67,8 +67,11 @@ async def start_submission(
         status=sub.status,
         started_at=sub.started_at,
         completed_at=sub.completed_at,
+        submitted_at=sub.submitted_at,
         submission_title=title_str,
         submission_name=title_str,
+        all_answered=False,
+        can_edit=True,
         answers=[],
         fields=[FormFieldResponse.model_validate(f) for f in sub.version.fields]
     )
@@ -96,6 +99,11 @@ async def list_user_submissions(
     for s in submissions:
         ver_fields = s.version.fields if s.version else []
         sub_title = title_map.get(s.id, f"submission-{s.id}")
+        ans_map = {a.field_id: a.value for a in s.answers if a.value}
+        req_fields = [f for f in ver_fields if f.required]
+        all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
+        can_edit = (s.status == "in_progress")
+
         result.append(
             SubmissionDetailResponse(
                 id=s.id,
@@ -107,8 +115,11 @@ async def list_user_submissions(
                 status=s.status,
                 started_at=s.started_at,
                 completed_at=s.completed_at,
+                submitted_at=s.submitted_at,
                 submission_title=sub_title,
                 submission_name=sub_title,
+                all_answered=all_ans,
+                can_edit=can_edit,
                 answers=[SubmissionAnswerResponse.model_validate(a) for a in s.answers],
                 fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
             )
@@ -139,6 +150,11 @@ async def get_user_submission(
 
     sub_title = await compute_submission_title(db, sub)
     ver_fields = sub.version.fields if sub.version else []
+    ans_map = {a.field_id: a.value for a in sub.answers if a.value}
+    req_fields = [f for f in ver_fields if f.required]
+    all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
+    can_edit = (sub.status == "in_progress")
+
     return SubmissionDetailResponse(
         id=sub.id,
         form_id=sub.form_id,
@@ -149,8 +165,11 @@ async def get_user_submission(
         status=sub.status,
         started_at=sub.started_at,
         completed_at=sub.completed_at,
+        submitted_at=sub.submitted_at,
         submission_title=sub_title,
         submission_name=sub_title,
+        all_answered=all_ans,
+        can_edit=can_edit,
         answers=[SubmissionAnswerResponse.model_validate(a) for a in sub.answers],
         fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
     )
@@ -168,7 +187,7 @@ async def delete_user_submission(
     if not sub or (sub.user_id != current_user.id and current_user.role != "admin"):
         raise HTTPException(status_code=404, detail="Submission not found")
 
-    if sub.status == "completed" and current_user.role != "admin":
+    if sub.status in ["submitted", "completed"] and current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Submitted forms cannot be deleted"
@@ -178,10 +197,11 @@ async def delete_user_submission(
     await db.commit()
     return None
 
+@router.post("/submissions/{submission_id}/submit", response_model=SubmissionDetailResponse)
 @router.post("/submissions/{submission_id}/complete", response_model=SubmissionDetailResponse)
 async def complete_submission(
     submission_id: int,
-    answers_in: List[SubmissionAnswerCreate],
+    answers_in: Optional[List[SubmissionAnswerCreate]] = None,
     current_user: User = Depends(require_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -199,31 +219,51 @@ async def complete_submission(
     if not sub or (sub.user_id != current_user.id and current_user.role != "admin"):
         raise HTTPException(status_code=404, detail="Submission not found")
 
-    # Upsert answers
-    existing_answers = {a.field_id: a for a in sub.answers}
-    for ans in answers_in:
-        if ans.field_id in existing_answers:
-            existing_ans = existing_answers[ans.field_id]
-            existing_ans.value = ans.value
-            if ans.raw_transcript is not None:
-                existing_ans.raw_transcript = ans.raw_transcript
-            if ans.language is not None:
-                existing_ans.language = ans.language
-            existing_ans.updated_at = datetime.utcnow()
-        else:
-            new_ans = SubmissionAnswer(
-                submission_id=sub.id,
-                field_id=ans.field_id,
-                value=ans.value,
-                raw_transcript=ans.raw_transcript,
-                language=ans.language,
-                updated_at=datetime.utcnow()
-            )
-            db.add(new_ans)
+    # Upsert answers if provided
+    if answers_in:
+        existing_answers = {a.field_id: a for a in sub.answers}
+        for ans in answers_in:
+            if ans.field_id in existing_answers:
+                existing_ans = existing_answers[ans.field_id]
+                existing_ans.value = ans.value
+                if ans.raw_transcript is not None:
+                    existing_ans.raw_transcript = ans.raw_transcript
+                if ans.language is not None:
+                    existing_ans.language = ans.language
+                existing_ans.updated_at = datetime.utcnow()
+            else:
+                new_ans = SubmissionAnswer(
+                    submission_id=sub.id,
+                    field_id=ans.field_id,
+                    value=ans.value,
+                    raw_transcript=ans.raw_transcript,
+                    language=ans.language,
+                    updated_at=datetime.utcnow()
+                )
+                db.add(new_ans)
+        await db.commit()
+        await db.refresh(sub)
 
-    sub.status = "completed"
-    sub.completed_at = datetime.utcnow()
-    await db.commit()
+    # Validate submit: check missing required fields
+    ver_fields = sub.version.fields if sub.version else []
+    answers_map = {a.field_id: a.value for a in sub.answers if a.value}
+    missing_fields = [
+        f.field_name.replace("_", " ") for f in ver_fields
+        if f.required and (f.id not in answers_map or not str(answers_map[f.id]).strip())
+    ]
+    if missing_fields and sub.status == "in_progress":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot submit form: missing required fields: {', '.join(missing_fields)}"
+        )
+
+    # Idempotent Submit
+    if sub.status == "in_progress":
+        sub.status = "submitted"
+        now = datetime.utcnow()
+        sub.submitted_at = now
+        sub.completed_at = now
+        await db.commit()
 
     # Re-query
     res = await db.execute(
@@ -239,6 +279,10 @@ async def complete_submission(
     updated_sub = res.scalar_one()
     sub_title = await compute_submission_title(db, updated_sub)
     ver_fields = updated_sub.version.fields if updated_sub.version else []
+    ans_map = {a.field_id: a.value for a in updated_sub.answers if a.value}
+    req_fields = [f for f in ver_fields if f.required]
+    all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
+    can_edit = (updated_sub.status == "in_progress")
 
     return SubmissionDetailResponse(
         id=updated_sub.id,
@@ -250,8 +294,11 @@ async def complete_submission(
         status=updated_sub.status,
         started_at=updated_sub.started_at,
         completed_at=updated_sub.completed_at,
+        submitted_at=updated_sub.submitted_at,
         submission_title=sub_title,
         submission_name=sub_title,
+        all_answered=all_ans,
+        can_edit=can_edit,
         answers=[SubmissionAnswerResponse.model_validate(a) for a in updated_sub.answers],
         fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
     )

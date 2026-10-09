@@ -79,7 +79,8 @@ async def test_4_field_form_state_machine():
 
     state4 = session.build_state_dict()
     assert state4["current_field"] is None or state4["answered_count"] == 4
-    assert state4["done"] is True # Done ONLY after all 4 required fields are answered!
+    assert state4["all_answered"] is True # All fields answered
+    assert state4["done"] is False # Form is in_progress, NOT submitted/locked yet!
 
 
 @pytest.mark.asyncio
@@ -176,7 +177,7 @@ async def test_user_cannot_delete_completed_submission(client: AsyncClient, admi
         headers=user_token_headers
     )
     assert comp_res.status_code == 200
-    assert comp_res.json()["status"] == "completed"
+    assert comp_res.json()["status"] in ["submitted", "completed"]
 
     # User tries to delete completed submission -> must fail with 400
     del_res = await client.delete(f"/submissions/{sub_id}", headers=user_token_headers)

@@ -47,8 +47,8 @@ class FormSessionManager:
         self.update_current_field_index()
 
     def is_locked(self) -> bool:
-        """Completed submissions are locked and cannot be edited."""
-        return self.submission_status == "completed"
+        """Submitted or completed submissions are locked and cannot be edited."""
+        return self.submission_status in ["submitted", "completed"]
 
     def update_current_field_index(self):
         """Sets current_field_index to the first unanswered field, or last field if all answered."""
@@ -112,7 +112,7 @@ class FormSessionManager:
         return True
 
     def cancel_editing(self):
-        """Cancels editing mode and returns to first unanswered field or review state."""
+        """Cancels editing mode and returns to review or normal state."""
         self.mode = "normal"
         self.editing_field_id = None
         self.update_current_field_index()
@@ -167,7 +167,7 @@ class FormSessionManager:
         self.accumulated_transcripts[self.current_field_index] = ""
 
     def advance(self) -> bool:
-        """Advance turn. If editing and all required answered, return to review screen."""
+        """Advance turn. Return all_answered boolean."""
         self.turn_number += 1
 
         if self.mode == "editing":
@@ -195,7 +195,7 @@ class FormSessionManager:
         return self.accumulated_transcripts.get(self.current_field_index, "")
 
     def is_complete(self) -> bool:
-        """Session is complete ONLY when every required field has an accepted non-null value."""
+        """all_answered: returns True ONLY when every required field has an accepted non-null value."""
         if not self.fields:
             return False
         for field in self.fields:
@@ -207,6 +207,10 @@ class FormSessionManager:
 
     def build_state_dict(self) -> dict:
         current_f = self.get_current_field()
+        all_ans = self.is_complete()
+        effective_mode = "editing" if self.mode == "editing" else ("review" if all_ans else "normal")
+        can_edit = not self.is_locked()
+
         return {
             "current_field": {
                 "id": current_f.id,
@@ -222,8 +226,10 @@ class FormSessionManager:
             "current_field_index": self.current_field_index,
             "answered_count": len([f for f in self.fields if f.id in self.answers and self.answers[f.id].get("value")]),
             "total_fields": len(self.fields),
-            "done": self.is_complete() if self.mode != "editing" else False,
-            "mode": self.mode,
+            "all_answered": all_ans,
+            "can_edit": can_edit,
+            "done": self.is_locked(),
+            "mode": effective_mode,
             "editing_field_id": self.editing_field_id,
             "turn_number": self.turn_number,
             "submission_id": self.submission_id,

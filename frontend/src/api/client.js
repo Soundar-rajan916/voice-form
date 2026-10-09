@@ -95,6 +95,11 @@ export const userFormsApi = {
   completeSubmission: (id, answers) =>
     apiRequest(`/submissions/${id}/complete`, {
       method: 'POST',
-      body: JSON.stringify(answers),
+      body: JSON.stringify(answers || []),
+    }),
+  submitSubmission: (id, answers) =>
+    apiRequest(`/submissions/${id}/submit`, {
+      method: 'POST',
+      body: JSON.stringify(answers || []),
     }),
 };

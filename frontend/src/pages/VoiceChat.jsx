@@ -38,9 +38,12 @@ export const VoiceChat = () => {
   const [fields, setFields] = useState([]);
   const [answers, setAnswers] = useState({}); // field_id -> value
   const [isDone, setIsDone] = useState(false);
-  const [mode, setMode] = useState('normal'); // 'normal' | 'editing'
+  const [mode, setMode] = useState('normal'); // 'normal' | 'editing' | 'review'
   const [editingFieldId, setEditingFieldId] = useState(null);
   const [updatedFieldId, setUpdatedFieldId] = useState(null);
+  const [allAnswered, setAllAnswered] = useState(false);
+  const [canEdit, setCanEdit] = useState(true);
+  const [submissionStatus, setSubmissionStatus] = useState('in_progress');
 
   // Notifications & Toast
   const [undoToast, setUndoToast] = useState(null);
@@ -84,7 +87,7 @@ export const VoiceChat = () => {
   } = useVad({
     onSpeechEnd: handleSpeechEnd,
     silenceDurationMs,
-    disabled: isSpeaking || (isDone && mode !== 'editing')
+    disabled: isSpeaking || submissionStatus === 'submitted'
   });
 
   // Tapping mic resets retry counter and resumes listening cleanly (Fix 2)
@@ -164,6 +167,9 @@ export const VoiceChat = () => {
     if ('done' in data) setIsDone(data.done);
     if ('mode' in data) setMode(data.mode);
     if ('editing_field_id' in data) setEditingFieldId(data.editing_field_id);
+    if ('all_answered' in data) setAllAnswered(data.all_answered);
+    if ('can_edit' in data) setCanEdit(data.can_edit);
+    if ('submission_status' in data) setSubmissionStatus(data.submission_status);
 
     if (data.answers) {
       const updatedAns = {};
@@ -193,9 +199,13 @@ export const VoiceChat = () => {
       if (data.type === 'ready') {
         applyServerState(data);
 
-        if (data.done) {
+        if (data.submission_status === 'submitted') {
           setChatMessages([
-            { sender: 'bot', text: '👋 All required questions have been answered! You can review or complete your submission.' }
+            { sender: 'bot', text: '🔒 This form has already been submitted and is locked for editing.' }
+          ]);
+        } else if (data.all_answered || data.mode === 'review') {
+          setChatMessages([
+            { sender: 'bot', text: '🎉 All questions answered. Review your answers, edit anything, then press Submit.' }
           ]);
         } else if (data.current_field) {
           setChatMessages([
@@ -247,8 +257,8 @@ export const VoiceChat = () => {
           setTimeout(() => setUndoToast(null), 5000);
         }
 
-        if (data.done) {
-          const completionMsg = '🎉 Thank you! All required questions are complete. Please review your answers and submit.';
+        if (data.mode === 'review' || data.all_answered) {
+          const completionMsg = '🎉 All questions answered. Review your answers, edit anything, then press Submit.';
           setChatMessages((prev) => [...prev, { sender: 'bot', text: completionMsg }]);
           speak(completionMsg, 'en');
         } else if (data.current_field) {
@@ -279,12 +289,21 @@ export const VoiceChat = () => {
         speak(data.message, 'en');
       }
 
+      else if (data.type === 'submitted') {
+        applyServerState(data);
+        setSubmitting(false);
+        const submittedMsg = '🎉 Form successfully submitted! Thank you.';
+        setChatMessages((prev) => [...prev, { sender: 'bot', text: submittedMsg }]);
+        speak(submittedMsg, 'en');
+      }
+
       else if (data.type === 'done') {
         applyServerState(data);
         setChatMessages((prev) => [...prev, { sender: 'bot', text: data.message }]);
       }
 
       else if (data.type === 'error') {
+        setSubmitting(false);
         setChatMessages((prev) => [
           ...prev,
           { sender: 'bot', text: `⚠️ ${data.message}`, isError: true }
@@ -301,6 +320,7 @@ export const VoiceChat = () => {
 
   // Handle Pencil Click
   const handleGotoField = (fieldId) => {
+    if (submissionStatus === 'submitted') return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'goto', field_id: fieldId }));
       inputRef.current?.focus();
@@ -309,6 +329,7 @@ export const VoiceChat = () => {
 
   // Handle Back Button click
   const handleBackButton = () => {
+    if (submissionStatus === 'submitted') return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'back' }));
     }
@@ -316,6 +337,7 @@ export const VoiceChat = () => {
 
   // Handle Undo Click
   const handleUndo = () => {
+    if (submissionStatus === 'submitted') return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'undo' }));
       setUndoToast(null);
@@ -332,7 +354,7 @@ export const VoiceChat = () => {
   // Handle Manual Text Input Submit
   const handleSendText = (e) => {
     e.preventDefault();
-    if (!textInput.trim()) return;
+    if (!textInput.trim() || submissionStatus === 'submitted') return;
 
     const val = textInput.trim();
     setTextInput('');
@@ -358,19 +380,28 @@ export const VoiceChat = () => {
   const handleCompleteSubmission = async () => {
     setSubmitting(true);
     try {
-      const answersPayload = fields.map((f) => ({
-        field_id: f.id,
-        value: answers[f.id] || null,
-        raw_transcript: answers[f.id] || null,
-        language: 'en'
-      }));
-
-      await userFormsApi.completeSubmission(submissionId, answersPayload);
-      navigate('/user');
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'submit' }));
+      } else {
+        const answersPayload = fields.map((f) => ({
+          field_id: f.id,
+          value: answers[f.id] || null,
+          raw_transcript: answers[f.id] || null,
+          language: 'en'
+        }));
+        await userFormsApi.completeSubmission(submissionId, answersPayload);
+        setSubmissionStatus('submitted');
+        setCanEdit(false);
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: 'bot', text: '🎉 Form successfully submitted!' }
+        ]);
+      }
     } catch (err) {
-      alert(err.message || 'Failed to complete submission');
-    } flex: true;
+      alert(err.message || 'Failed to submit form');
+    } finally {
       setSubmitting(false);
+    }
   };
 
   const activeEditingField = fields.find((f) => f.id === editingFieldId) || currentField;
@@ -405,13 +436,19 @@ export const VoiceChat = () => {
               <div>
                 <h2 className="text-base font-bold text-white flex items-center space-x-2">
                   <span>Voice Chat Assistant</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  {submissionStatus === 'submitted' ? (
+                    <Lock className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  )}
                 </h2>
                 <p className="text-[11px] text-slate-400">
-                  {mode === 'editing'
+                  {submissionStatus === 'submitted'
+                    ? '🔒 Form submitted & locked'
+                    : mode === 'editing'
                     ? `✏️ Editing: ${activeEditingField?.field_name.replace('_', ' ')}`
-                    : isDone
-                    ? '🎉 Form complete! Review & submit.'
+                    : allAnswered || mode === 'review'
+                    ? '🎉 Review stage: All required questions answered'
                     : currentField
                     ? `Current Field: ${currentField.field_name.replace('_', ' ')} (${currentField.data_type})`
                     : 'Session active'}
@@ -521,7 +558,7 @@ export const VoiceChat = () => {
           </div>
 
           {/* Undo Toast Floating Bar */}
-          {undoToast && (
+          {undoToast && submissionStatus !== 'submitted' && (
             <div className="mx-4 mb-2 p-3 rounded-xl bg-indigo-950 border border-indigo-700 text-indigo-200 text-xs flex items-center justify-between shadow-2xl animate-fade-in">
               <span>Saved answer for <strong>{undoToast.fieldName}</strong>.</span>
               <button
@@ -551,32 +588,32 @@ export const VoiceChat = () => {
               <button
                 type="button"
                 onClick={handleMicTap}
-                className={`relative p-5 rounded-full shadow-2xl transition-all ${
+                disabled={submissionStatus === 'submitted'}
+                className={`relative p-5 rounded-full shadow-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                   vadState === 'speech_detected'
                     ? 'bg-red-600 text-white animate-pulse-ring scale-110'
                     : isListening
                     ? 'bg-indigo-600 text-white animate-pulse'
                     : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                 }`}
-                title={isListening ? 'Click to pause mic' : 'Click to activate mic & reset counter'}
+                title={submissionStatus === 'submitted' ? 'Form submitted (read-only)' : isListening ? 'Click to pause mic' : 'Click to activate mic & reset counter'}
               >
                 {isListening ? <Mic className="w-7 h-7" /> : <MicOff className="w-7 h-7" />}
               </button>
 
               <div className="text-xs font-mono uppercase tracking-wider">
-                {vadState === 'speech_detected' && (
+                {submissionStatus === 'submitted' ? (
+                  <span className="text-slate-500">FORM SUBMITTED (READ-ONLY)</span>
+                ) : vadState === 'speech_detected' ? (
                   <span className="text-red-400 font-bold flex items-center space-x-1">
                     <Activity className="w-3.5 h-3.5 animate-spin" />
                     <span>Speech Detected...</span>
                   </span>
-                )}
-                {vadState === 'listening' && (
+                ) : vadState === 'listening' ? (
                   <span className="text-indigo-400 font-semibold">Listening (Silero VAD)...</span>
-                )}
-                {vadState === 'processing' && (
+                ) : vadState === 'processing' ? (
                   <span className="text-purple-400 font-semibold">Transcribing & Extracting...</span>
-                )}
-                {vadState === 'idle' && (
+                ) : (
                   <span className="text-slate-500">MIC PAUSED (TAP TO SPEAK)</span>
                 )}
               </div>
@@ -587,7 +624,7 @@ export const VoiceChat = () => {
               <button
                 type="button"
                 onClick={handleBackButton}
-                disabled={currentIndex === 0}
+                disabled={currentIndex === 0 || submissionStatus === 'submitted'}
                 className="p-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-slate-800 text-slate-300 rounded-xl transition-colors flex items-center space-x-1 text-xs font-semibold"
                 title="Go back to previous question"
               >
@@ -599,18 +636,22 @@ export const VoiceChat = () => {
                 ref={inputRef}
                 type="text"
                 value={textInput}
+                disabled={submissionStatus === 'submitted'}
                 onChange={(e) => setTextInput(e.target.value)}
                 placeholder={
-                  mode === 'editing' && activeEditingField
+                  submissionStatus === 'submitted'
+                    ? 'Form has already been submitted.'
+                    : mode === 'editing' && activeEditingField
                     ? `Type updated ${activeEditingField.field_name.replace('_', ' ')}...`
                     : "Or type your response manually here..."
                 }
-                className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none placeholder-slate-500"
+                className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
 
               <button
                 type="submit"
-                className="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors"
+                disabled={submissionStatus === 'submitted'}
+                className="p-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -624,7 +665,7 @@ export const VoiceChat = () => {
             <div>
               <h3 className="font-bold text-white text-base">Live Form Panel</h3>
               <p className="text-xs text-slate-400">
-                Click pencil to redo any field.
+                {submissionStatus === 'submitted' ? 'Form submitted (read-only)' : 'Click pencil to redo any field.'}
               </p>
             </div>
             <div className="px-2.5 py-1 bg-indigo-950 text-indigo-300 border border-indigo-800 rounded-lg text-xs font-mono font-bold">
@@ -666,14 +707,21 @@ export const VoiceChat = () => {
                   </div>
 
                   <div className="flex items-center justify-between mt-1">
-                    <p className="text-sm font-bold text-emerald-400 truncate max-w-[220px]">
-                      {hasAnswer ? answers[field.id] : <span className="text-slate-600 font-normal italic">Unfilled</span>}
+                    <p className="text-sm font-bold truncate max-w-[220px]">
+                      {hasAnswer ? (
+                        <span className={isEditingThis ? 'text-emerald-400/50 italic' : 'text-emerald-400'}>
+                          {answers[field.id]} {isEditingThis && '(editing...)'}
+                        </span>
+                      ) : (
+                        <span className="text-slate-600 font-normal italic">Unfilled</span>
+                      )}
                     </p>
                     <button
                       type="button"
                       onClick={() => handleGotoField(field.id)}
-                      className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 rounded transition-colors"
-                      title={`Redo ${field.field_name.replace('_', ' ')}`}
+                      disabled={submissionStatus === 'submitted'}
+                      className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed rounded transition-colors"
+                      title={submissionStatus === 'submitted' ? 'Form submitted (read-only)' : `Redo ${field.field_name.replace('_', ' ')}`}
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
@@ -687,22 +735,38 @@ export const VoiceChat = () => {
           <div className="space-y-1">
             <button
               onClick={handleCompleteSubmission}
-              disabled={submitting || mode === 'editing' || !isDone}
+              disabled={submitting || mode === 'editing' || !allAnswered || submissionStatus === 'submitted'}
               title={
-                mode === 'editing'
-                  ? 'Finish editing active field before submitting.'
-                  : !isDone
+                submissionStatus === 'submitted'
+                  ? 'Form has already been submitted.'
+                  : mode === 'editing'
+                  ? 'Finish or cancel editing active field before submitting.'
+                  : !allAnswered
                   ? 'Complete all required questions to submit.'
                   : 'Submit completed form'
               }
               className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Complete & Submit Form</span>
+              {submissionStatus === 'submitted' ? (
+                <>
+                  <Lock className="w-4 h-4 text-emerald-300" />
+                  <span>Submitted & Locked</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{submitting ? 'Submitting...' : 'Complete & Submit Form'}</span>
+                </>
+              )}
             </button>
             {mode === 'editing' && (
               <p className="text-[11px] text-amber-400 text-center font-mono">
                 Editing active field — complete or cancel to submit.
+              </p>
+            )}
+            {submissionStatus === 'submitted' && (
+              <p className="text-[11px] text-emerald-400 text-center font-mono">
+                Form is submitted. Submissions are read-only.
               </p>
             )}
           </div>

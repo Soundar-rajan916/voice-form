@@ -127,8 +127,11 @@ class SubmissionResponse(BaseModel):
     status: str
     started_at: datetime
     completed_at: Optional[datetime] = None
+    submitted_at: Optional[datetime] = None
     submission_title: Optional[str] = None
     submission_name: Optional[str] = None
+    all_answered: Optional[bool] = False
+    can_edit: Optional[bool] = True
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -142,8 +145,11 @@ class SubmissionDetailResponse(BaseModel):
     status: str
     started_at: datetime
     completed_at: Optional[datetime] = None
+    submitted_at: Optional[datetime] = None
     submission_title: Optional[str] = None
     submission_name: Optional[str] = None
+    all_answered: Optional[bool] = False
+    can_edit: Optional[bool] = True
     answers: List[SubmissionAnswerResponse] = []
     fields: List[FormFieldResponse] = []
 

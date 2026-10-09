@@ -154,11 +154,11 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         await websocket.send_json(st_msg)
                         continue
 
-                    if msg_type in ["goto", "back", "undo", "cancel_edit", "text_input", "reset_mic"]:
+                    if msg_type in ["goto", "back", "undo", "cancel_edit", "text_input", "reset_mic", "submit"]:
                         if session_manager.is_locked():
                             await websocket.send_json({
                                 "type": "error",
-                                "message": "Completed submissions are locked and cannot be edited"
+                                "message": "This form has already been submitted"
                             })
                             continue
 
@@ -167,6 +167,39 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         res_msg = session_manager.build_state_dict()
                         res_msg.update({"type": "mic_resumed"})
                         await websocket.send_json(res_msg)
+                        continue
+
+                    if msg_type == "submit":
+                        missing_fields = [
+                            f.field_name.replace("_", " ") for f in session_manager.fields
+                            if f.required and (f.id not in session_manager.answers or not session_manager.answers[f.id].get("value"))
+                        ]
+                        if missing_fields:
+                            await websocket.send_json({
+                                "type": "error",
+                                "message": f"Cannot submit form: missing required fields: {', '.join(missing_fields)}"
+                            })
+                            continue
+
+                        session_manager.mode = "normal"
+                        session_manager.editing_field_id = None
+                        session_manager.submission_status = "submitted"
+
+                        async with AsyncSessionLocal() as db:
+                            res = await db.execute(select(Submission).where(Submission.id == submission_id))
+                            sub = res.scalar_one_or_none()
+                            if sub:
+                                sub.status = "submitted"
+                                sub.submitted_at = datetime.utcnow()
+                                sub.completed_at = datetime.utcnow()
+                                await db.commit()
+
+                        sub_msg = session_manager.build_state_dict()
+                        sub_msg.update({
+                            "type": "submitted",
+                            "message": "🎉 Form successfully submitted!"
+                        })
+                        await websocket.send_json(sub_msg)
                         continue
 
                     if msg_type == "goto":
@@ -214,18 +247,13 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     pass
 
             current_field = session_manager.get_current_field()
-            if not current_field and session_manager.is_complete() and session_manager.mode != "editing":
-                done_msg = session_manager.build_state_dict()
-                done_msg.update({"type": "done", "message": "All fields filled"})
-                await websocket.send_json(done_msg)
-                continue
 
             # A. BINARY WAV AUDIO RECEIVED
             if "bytes" in message and message["bytes"]:
                 if session_manager.is_locked():
                     await websocket.send_json({
                         "type": "error",
-                        "message": "Completed submissions are locked and cannot be edited"
+                        "message": "This form has already been submitted"
                     })
                     continue
 

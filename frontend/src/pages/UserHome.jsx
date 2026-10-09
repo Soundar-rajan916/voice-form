@@ -165,56 +165,59 @@ export const UserHome = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {submissions.map((sub) => (
-                <div
-                  key={sub.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg hover:border-slate-700 transition-colors"
-                >
-                  <div>
-                    <div className="flex items-center space-x-3 mb-1">
-                      <span className="font-bold text-white text-base">
-                        {sub.submission_title || sub.submission_name || `Submission #${sub.id}`}
-                      </span>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
-                          sub.status === 'completed'
-                            ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                            : 'bg-amber-950 text-amber-400 border border-amber-800'
-                        }`}
-                      >
-                        {sub.status}
-                      </span>
-                      <span className="text-xs font-mono text-purple-400">
-                        v{sub.version_number}
-                      </span>
+              {submissions.map((sub) => {
+                const isSubmitted = sub.status === 'submitted' || sub.status === 'completed';
+                return (
+                  <div
+                    key={sub.id}
+                    className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-lg hover:border-slate-700 transition-colors"
+                  >
+                    <div>
+                      <div className="flex items-center space-x-3 mb-1">
+                        <span className="font-bold text-white text-base">
+                          {sub.submission_title || sub.submission_name || `Submission #${sub.id}`}
+                        </span>
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                            isSubmitted
+                              ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                              : 'bg-amber-950 text-amber-400 border border-amber-800'
+                          }`}
+                        >
+                          {sub.status}
+                        </span>
+                        <span className="text-xs font-mono text-purple-400">
+                          v{sub.version_number}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-slate-400">
+                        Started: {new Date(sub.started_at).toLocaleString()}
+                      </p>
                     </div>
 
-                    <p className="text-xs text-slate-400">
-                      Started: {new Date(sub.started_at).toLocaleString()}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center space-x-3">
-                    <Link
-                      to={`/fill/${sub.id}`}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span>{sub.status === 'completed' ? 'View Summary' : 'Resume Session'}</span>
-                    </Link>
-
-                    {sub.status !== 'completed' && (
-                      <button
-                        onClick={() => handleDeleteSubmission(sub.id)}
-                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-colors"
-                        title="Delete Submission"
+                    <div className="flex items-center space-x-3">
+                      <Link
+                        to={`/fill/${sub.id}`}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-indigo-400 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                        <Eye className="w-4 h-4" />
+                        <span>{isSubmitted ? 'View Submission' : 'Resume Session'}</span>
+                      </Link>
+
+                      {!isSubmitted && (
+                        <button
+                          onClick={() => handleDeleteSubmission(sub.id)}
+                          className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-colors"
+                          title="Delete Submission"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

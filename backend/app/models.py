@@ -68,9 +68,10 @@ class Submission(Base):
     form_id = Column(Integer, ForeignKey("forms.id", ondelete="CASCADE"), nullable=False)
     form_version_id = Column(Integer, ForeignKey("form_versions.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    status = Column(String(50), nullable=False, default="in_progress") # "in_progress", "completed"
+    status = Column(String(50), nullable=False, default="in_progress") # "in_progress", "submitted"
     started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     completed_at = Column(DateTime, nullable=True)
+    submitted_at = Column(DateTime, nullable=True)
 
     form = relationship("Form", back_populates="submissions")
     version = relationship("FormVersion", back_populates="submissions")
