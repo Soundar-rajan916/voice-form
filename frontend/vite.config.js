@@ -12,8 +12,22 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/auth': 'http://127.0.0.1:8000',
-      '/kiosk': 'http://127.0.0.1:8000',
-      '/admin': 'http://127.0.0.1:8000',
+      '/kiosk': {
+        target: 'http://127.0.0.1:8000',
+        bypass: (req) => {
+          if (req.headers.accept && req.headers.accept.includes('text/html')) {
+            return '/index.html';
+          }
+        }
+      },
+      '/admin': {
+        target: 'http://127.0.0.1:8000',
+        bypass: (req) => {
+          if (req.headers.accept && req.headers.accept.includes('text/html')) {
+            return '/index.html';
+          }
+        }
+      },
       '/forms': 'http://127.0.0.1:8000',
       '/submissions': 'http://127.0.0.1:8000',
       '/ws': {
