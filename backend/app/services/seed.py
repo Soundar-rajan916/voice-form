@@ -6,7 +6,7 @@ from app.models import User, Form, FormVersion, FormField
 SAMPLE_FORMS = [
     {
         "title": "Income certificate request",
-        "description": "Sample template, adapt to the department's real form. Used by citizens to obtain family annual income certificate for education, bank loans, and welfare.",
+        "description": "Used by citizens to obtain family annual income certificate for education, bank loans, and welfare.",
         "fields": [
             {
                 "field_name": "applicant_name",
@@ -101,7 +101,7 @@ SAMPLE_FORMS = [
     },
     {
         "title": "Scholarship application",
-        "description": "Sample template, adapt to the department's real form. Post-matric and higher education scholarship assistance application.",
+        "description": "Post-matric and higher education scholarship assistance application.",
         "fields": [
             {
                 "field_name": "student_name",
@@ -189,7 +189,7 @@ SAMPLE_FORMS = [
     },
     {
         "title": "Old age pension application",
-        "description": "Sample template, adapt to the department's real form. Monthly pension welfare assistance for senior citizens.",
+        "description": "Monthly pension welfare assistance for senior citizens.",
         "fields": [
             {
                 "field_name": "applicant_name",

@@ -139,10 +139,6 @@ export const AdminDashboard = () => {
               const isPublished = form.status === 'published';
               const isArchived = form.status === 'archived';
 
-              const isSampleTemplate =
-                ['Income certificate request', 'Scholarship application', 'Old age pension application'].includes(form.title) ||
-                (form.description || '').toLowerCase().includes('sample template');
-
               return (
                 <div
                   key={form.id}
@@ -159,14 +155,6 @@ export const AdminDashboard = () => {
                         {form.status}
                       </span>
                     </div>
-
-                    {isSampleTemplate && (
-                      <div className="mb-3">
-                        <span className="inline-block px-2.5 py-0.5 bg-[#FFE45C] text-[#23272F] text-[11px] font-medium rounded border border-[#23272F]/20">
-                          Sample template, adapt to the department's real form
-                        </span>
-                      </div>
-                    )}
 
                     <p className="text-xs text-[#2A2E2C]/75 line-clamp-2 mb-4 h-8">
                       {form.description || 'Citizen service application form.'}
