@@ -83,8 +83,3 @@ def validate_reference_number(ref: str) -> Tuple[bool, Optional[str]]:
 
     return True, None
 
-def is_valid_reference_number(ref: str) -> bool:
-    """Convenience boolean helper for reference number validation."""
-    is_valid, _ = validate_reference_number(ref)
-    return is_valid
-
