@@ -69,10 +69,10 @@ export const UserHome = () => {
             {brandConfig.hospitalName}
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold font-serif text-[#2A2E2C] mb-2">
-            Patient intake and registration forms
+            Citizen service and application forms
           </h1>
           <p className="text-sm text-[#2A2E2C]/75 max-w-3xl leading-relaxed">
-            Fill in your intake forms by speaking in Tamil or English, typing, or uploading a document. Our assistant asks one question at a time and displays your answers on your registration slip.
+            Fill in your application forms by speaking in Tamil or English, typing, or uploading a document. Our assistant asks one question at a time and displays your answers on your application slip.
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export const UserHome = () => {
             </div>
           ) : publishedForms.length === 0 ? (
             <div className="bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg text-center py-12 p-6">
-              <p className="text-sm text-[#2A2E2C]/75">No intake forms published at the moment.</p>
+              <p className="text-sm text-[#2A2E2C]/75">No application forms published at the moment.</p>
             </div>
           ) : (
             <div className="bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg sheet-shadow divide-y divide-[#DCE7E0]">
@@ -113,7 +113,7 @@ export const UserHome = () => {
                       {form.title}
                     </h3>
                     <p className="text-xs text-[#2A2E2C]/75 max-w-2xl">
-                      {form.description || 'Patient registration and intake form.'}
+                      {form.description || 'Citizen service application form.'}
                     </p>
                   </div>
 

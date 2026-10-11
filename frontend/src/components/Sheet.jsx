@@ -33,7 +33,7 @@ export const Sheet = ({
       {/* Header */}
       <div className="border-b border-[#DCE7E0] pb-4 mb-4">
         <span className="block text-xs font-semibold uppercase tracking-widest text-[#2A2E2C]/75 font-sans-ui mb-1">
-          {brandConfig.hospitalName}
+          {brandConfig.officeName || brandConfig.hospitalName}
         </span>
         <h2 className="font-serif text-2xl font-bold text-[#2A2E2C] mb-2 truncate">
           {formTitle}
@@ -105,7 +105,7 @@ export const Sheet = ({
         {isSubmitted && (
           <div className="text-center font-sans-ui pt-1 space-y-1">
             <p className="text-xs text-[#2A2E2C]/75">
-              Your answers have been sent to {brandConfig.hospitalName}.
+              Your answers have been sent to {brandConfig.officeName || brandConfig.hospitalName}.
             </p>
             <Link
               to="/user"

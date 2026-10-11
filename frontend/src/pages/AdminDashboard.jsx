@@ -89,13 +89,13 @@ export const AdminDashboard = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <span className="text-xs font-semibold uppercase tracking-widest text-[#2A2E2C]/75 block mb-1">
-              Hospital staff management
+              Citizen Service Administration
             </span>
             <h1 className="text-2xl sm:text-3xl font-bold font-serif text-[#2A2E2C]">
               Forms
             </h1>
             <p className="text-sm text-[#2A2E2C]/75 mt-1">
-              Create, edit, publish versions, and view patient intake responses.
+              Create, edit, publish versions, and view citizen application responses.
             </p>
           </div>
 
@@ -129,14 +129,14 @@ export const AdminDashboard = () => {
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-[#2A2E2C]/75 bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg">
             <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF] mb-4" />
-            <p className="text-sm">Loading intake forms...</p>
+            <p className="text-sm">Loading application forms...</p>
           </div>
         ) : forms.length === 0 ? (
           <div className="py-16 text-center bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg p-8 sheet-shadow">
             <FileText className="w-12 h-12 text-[#2A2E2C]/40 mx-auto mb-4" />
             <h3 className="text-lg font-bold font-serif text-[#2A2E2C] mb-1">No forms created yet</h3>
             <p className="text-xs text-[#2A2E2C]/75 max-w-sm mx-auto mb-6">
-              Get started by creating your first patient intake form with Tamil and English questions.
+              Get started by creating your first citizen service form with Tamil and English questions.
             </p>
             <Link
               to="/admin/builder/new"

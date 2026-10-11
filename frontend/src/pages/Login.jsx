@@ -52,7 +52,7 @@ export const Login = () => {
                 {brandConfig.appName}
               </h1>
               <p className="text-sm text-[#2A2E2C]/75 font-sans-ui mt-1">
-                {brandConfig.hospitalName} patient intake portal
+                {brandConfig.officeName || brandConfig.hospitalName} citizen service portal
               </p>
             </div>
 
@@ -114,7 +114,7 @@ export const Login = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="patient@example.com"
+                  placeholder="citizen@example.com"
                   className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
                 />
               </div>
@@ -146,7 +146,7 @@ export const Login = () => {
           </div>
 
           <div className="mt-8 pt-4 border-t border-[#DCE7E0] text-xs text-[#2A2E2C]/75 font-sans-ui">
-            <p>Demo hospital staff login: <code className="bg-[#DCE7E0] px-1.5 py-0.5 rounded text-[#2A2E2C]">admin@voiceform.com / Admin@12345</code></p>
+            <p>Demo administrator login: <code className="bg-[#DCE7E0] px-1.5 py-0.5 rounded text-[#2A2E2C]">admin@voiceform.com / Admin@12345</code></p>
           </div>
         </div>
 
@@ -155,10 +155,10 @@ export const Login = () => {
           <div className="bg-[#F6F8F5] border border-[#DCE7E0] rounded p-6 sheet-shadow relative">
             <div className="border-b border-[#DCE7E0] pb-3 mb-4">
               <span className="text-[11px] font-semibold text-[#2A2E2C]/75 uppercase tracking-widest block">
-                {brandConfig.hospitalName}
+                {brandConfig.officeName || brandConfig.hospitalName}
               </span>
               <h2 className="font-serif text-xl font-bold text-[#2A2E2C] mt-0.5">
-                Registration slip
+                Application slip
               </h2>
             </div>
 
@@ -181,12 +181,12 @@ export const Login = () => {
 
               <div className="pt-2">
                 <span className="text-xs text-[#2A2E2C]/75 block uppercase tracking-wider">Department / துறை</span>
-                <span className="text-[#1F3FBF] font-semibold">General Medicine</span>
+                <span className="text-[#1F3FBF] font-semibold">Revenue & Social Welfare</span>
               </div>
             </div>
 
             <div className="mt-6 pt-3 border-t border-[#DCE7E0] text-center text-xs text-[#2A2E2C]/75 italic">
-              Sample registration entry
+              Sample application entry
             </div>
           </div>
         </div>

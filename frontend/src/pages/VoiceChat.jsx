@@ -52,7 +52,7 @@ export const VoiceChat = () => {
   const [allAnswered, setAllAnswered] = useState(false);
   const [canEdit, setCanEdit] = useState(true);
   const [submissionStatus, setSubmissionStatus] = useState('in_progress');
-  const [formTitle, setFormTitle] = useState('Intake Form');
+  const [formTitle, setFormTitle] = useState('Application Form');
 
   // Document Upload & Progress State
   const [docUploading, setDocUploading] = useState(false);
@@ -215,7 +215,7 @@ export const VoiceChat = () => {
             { sender: 'bot', text: 'All questions answered. Check your answers, change anything, then submit.' }
           ]);
         } else if (data.current_field) {
-          const title = data.form_title || 'your intake form';
+          const title = data.form_title || 'your application form';
           setChatMessages([
             { sender: 'bot', text: `Hello. I'll help you fill in ${title}. I'll ask one question at a time. You can speak or type, and you can change any answer before you submit.` }
           ]);
@@ -311,7 +311,7 @@ export const VoiceChat = () => {
       else if (data.type === 'submitted') {
         applyServerState(data);
         setSubmitting(false);
-        const submittedMsg = `Form submitted. Your answers have been sent to ${brandConfig.hospitalName}.`;
+        const submittedMsg = `Form submitted. Your answers have been sent to ${brandConfig.officeName || 'Citizen Service Centre'}.`;
         setChatMessages((prev) => [...prev, { sender: 'bot', text: submittedMsg }]);
         speak(submittedMsg, 'en');
       }
@@ -531,7 +531,7 @@ export const VoiceChat = () => {
                     ? 'All questions answered'
                     : currentField
                     ? `Question: ${currentField.field_name.replace(/_/g, ' ')}`
-                    : 'Intake session'}
+                    : 'Application session'}
                 </p>
               </div>
             </div>
@@ -550,7 +550,7 @@ export const VoiceChat = () => {
                   onClick={() => fileInputRef.current?.click()}
                   disabled={docUploading}
                   className="px-3 py-1.5 border border-[#DCE7E0] hover:bg-[#DCE7E0]/50 text-[#2A2E2C] text-xs font-semibold rounded flex items-center space-x-1.5 transition-colors cursor-pointer"
-                  title="Upload patient record or document"
+                  title="Upload supporting document"
                 >
                   <Upload className="w-3.5 h-3.5 text-[#1F3FBF]" />
                   <span className="hidden sm:inline">Upload document</span>

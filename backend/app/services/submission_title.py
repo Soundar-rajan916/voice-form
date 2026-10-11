@@ -10,7 +10,7 @@ async def compute_submission_title(
 ) -> str:
     """
     Computes submission title formatted like: <form_title>
-    e.g. hospital, general form
+    e.g. pension, certificate, general form
     """
     if not form_title:
         if sub.form and sub.form.title:

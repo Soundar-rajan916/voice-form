@@ -85,14 +85,14 @@ async def test_4_field_form_state_machine():
 
 @pytest.mark.asyncio
 async def test_submission_name_formatting(client: AsyncClient, admin_token_headers, user_token_headers):
-    # 1. Create and publish form 'hospital'
+    # 1. Create and publish form 'welfare'
     f1_resp = await client.post(
         "/admin/forms",
         json={
-            "title": "hospital",
-            "description": "Hospital registration",
+            "title": "welfare",
+            "description": "Welfare assistance",
             "fields": [
-                {"field_name": "patient_name", "data_type": "String", "description": "Patient Name", "required": True, "position": 0}
+                {"field_name": "applicant_name", "data_type": "String", "description": "Applicant Name", "required": True, "position": 0}
             ]
         },
         headers=admin_token_headers
@@ -117,19 +117,19 @@ async def test_submission_name_formatting(client: AsyncClient, admin_token_heade
     f2_id = f2_resp.json()["id"]
     await client.post(f"/admin/forms/{f2_id}/publish", headers=admin_token_headers)
 
-    # 3. Create sub 1 for hospital -> hospital
+    # 3. Create sub 1 for welfare -> welfare
     sub1_res = await client.post(f"/forms/{f1_id}/submissions", headers=user_token_headers)
     assert sub1_res.status_code == 201
     sub1_data = sub1_res.json()
-    assert sub1_data["submission_title"] == "hospital"
-    assert sub1_data["submission_name"] == "hospital"
+    assert sub1_data["submission_title"] == "welfare"
+    assert sub1_data["submission_name"] == "welfare"
 
-    # 4. Create sub 2 for hospital -> hospital
+    # 4. Create sub 2 for welfare -> welfare
     sub2_res = await client.post(f"/forms/{f1_id}/submissions", headers=user_token_headers)
     assert sub2_res.status_code == 201
     sub2_data = sub2_res.json()
-    assert sub2_data["submission_title"] == "hospital"
-    assert sub2_data["submission_name"] == "hospital"
+    assert sub2_data["submission_title"] == "welfare"
+    assert sub2_data["submission_name"] == "welfare"
 
     # 5. Create sub 1 for General Form -> general form
     sub3_res = await client.post(f"/forms/{f2_id}/submissions", headers=user_token_headers)
@@ -143,7 +143,7 @@ async def test_submission_name_formatting(client: AsyncClient, admin_token_heade
     assert list_res.status_code == 200
     list_data = list_res.json()
     titles = [s["submission_title"] for s in list_data]
-    assert "hospital" in titles
+    assert "welfare" in titles
     assert "general form" in titles
 
 

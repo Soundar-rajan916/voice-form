@@ -5,13 +5,13 @@ from httpx import AsyncClient
 async def test_admin_create_and_publish_form(client: AsyncClient, admin_token_headers):
     # 1. Create form
     payload = {
-        "title": "Patient Feedback Form",
-        "description": "Voice survey for patients",
+        "title": "Citizen Feedback Form",
+        "description": "Voice survey for citizens",
         "fields": [
             {
-                "field_name": "patient_name",
+                "field_name": "citizen_name",
                 "data_type": "String",
-                "description": "Full name of the patient",
+                "description": "Full name of the citizen",
                 "required": True,
                 "position": 0
             },

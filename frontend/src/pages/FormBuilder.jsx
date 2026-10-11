@@ -161,7 +161,7 @@ const SortableFieldItem = ({
           type="text"
           value={field.description || ''}
           onChange={(e) => updateField(index, 'description', e.target.value)}
-          placeholder="e.g. age of the patient in years"
+          placeholder="e.g. age of the applicant in years"
           className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
         />
       </div>
@@ -393,7 +393,7 @@ export const FormBuilder = () => {
                 {isEdit ? 'Edit Form' : 'Create Form'}
               </h1>
               <p className="text-xs text-[#2A2E2C]/75 mt-0.5">
-                Define numbered field rows and preview the patient intake slip.
+                Define numbered field rows and preview the application slip.
               </p>
             </div>
           </div>
@@ -446,7 +446,7 @@ export const FormBuilder = () => {
                     required
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Patient registration"
+                    placeholder="e.g. Income certificate request"
                     className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-base text-[#2A2E2C] font-serif font-bold focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
                   />
                 </div>
@@ -459,7 +459,7 @@ export const FormBuilder = () => {
                     rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Short description for patients and staff"
+                    placeholder="Short description for citizens and staff"
                     className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
                   />
                 </div>
@@ -471,7 +471,7 @@ export const FormBuilder = () => {
                     onChange={(e) => setAllowDocUpload(e.target.checked)}
                     className="rounded border-[#DCE7E0] text-[#1F3FBF] focus:ring-[#1F3FBF]"
                   />
-                  <span>Allow patients to upload records and documents (.pdf / .docx)</span>
+                  <span>Allow citizens to upload supporting documents (.pdf / .docx)</span>
                 </label>
               </div>
 
@@ -520,12 +520,12 @@ export const FormBuilder = () => {
               <div className="sticky top-24 space-y-3">
                 <div className="flex items-center justify-between px-1">
                   <span className="text-xs font-semibold uppercase tracking-wider text-[#2A2E2C]/75">
-                    Live Registration Slip Preview
+                    Live Application Slip Preview
                   </span>
                 </div>
                 <div className="h-[600px]">
                   <Sheet
-                    formTitle={title || "Patient Registration Slip"}
+                    formTitle={title || "Application Slip"}
                     fields={previewFields}
                     answers={{}}
                     allAnswered={false}
