@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Literal, Any
+from typing import List, Optional, Literal, Any, Dict
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # --- AUTH SCHEMAS ---
@@ -17,6 +17,8 @@ class UserResponse(BaseModel):
     email: str
     username: Optional[str] = None
     role: str
+    is_active: bool = True
+    device_name: Optional[str] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -42,6 +44,7 @@ class FormFieldCreate(BaseModel):
     choices: Optional[List[str]] = None
     question_en: Optional[str] = None
     question_ta: Optional[str] = None
+    is_sensitive_number: bool = False
 
 class FormFieldResponse(BaseModel):
     id: int
@@ -54,6 +57,7 @@ class FormFieldResponse(BaseModel):
     choices: Optional[List[str]] = None
     question_en: Optional[str] = None
     question_ta: Optional[str] = None
+    is_sensitive_number: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -134,7 +138,7 @@ class DocumentUploadResponse(BaseModel):
     message: Optional[str] = None
 
 class AcceptProposalsRequest(BaseModel):
-    proposal_ids: Optional[List[int]] = None # None or empty means accept all eligible
+    proposal_ids: Optional[List[int]] = None
 
 class DismissProposalRequest(BaseModel):
     proposal_id: int
@@ -157,7 +161,7 @@ class SubmissionAnswerResponse(BaseModel):
     value: Optional[str] = None
     raw_transcript: Optional[str] = None
     language: Optional[str] = None
-    source: Optional[str] = "typed" # "voice", "typed", "document"
+    source: Optional[str] = "typed"
     evidence: Optional[str] = None
     source_confidence: Optional[float] = None
     updated_at: datetime
@@ -177,6 +181,15 @@ class SubmissionResponse(BaseModel):
     submission_name: Optional[str] = None
     all_answered: Optional[bool] = False
     can_edit: Optional[bool] = True
+    reference_number: Optional[str] = None
+    channel: str = "online"
+    assisted_by: Optional[int] = None
+    kiosk_id: Optional[int] = None
+    consent_at: Optional[datetime] = None
+    consent_noted_by: Optional[str] = None
+    language_chosen: str = "ta"
+    retention_expires_at: Optional[datetime] = None
+    print_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -195,9 +208,65 @@ class SubmissionDetailResponse(BaseModel):
     submission_name: Optional[str] = None
     all_answered: Optional[bool] = False
     can_edit: Optional[bool] = True
+    reference_number: Optional[str] = None
+    channel: str = "online"
+    assisted_by: Optional[int] = None
+    kiosk_id: Optional[int] = None
+    consent_at: Optional[datetime] = None
+    consent_noted_by: Optional[str] = None
+    language_chosen: str = "ta"
+    retention_expires_at: Optional[datetime] = None
+    print_count: int = 0
     answers: List[SubmissionAnswerResponse] = []
     proposals: List[SubmissionProposalResponse] = []
     fields: List[FormFieldResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Kiosk & Operator Session Schemas
+class KioskSessionCreate(BaseModel):
+    form_id: int
+    language: str = "ta"
+    consent_agreed: bool = True
+
+class KioskSessionResponse(BaseModel):
+    submission_id: int
+    scoped_token: str
+    form_title: str
+    language: str
+    expires_in_minutes: int = 20
+
+# Reference Lookup
+class ReferenceLookupResponse(BaseModel):
+    submission: SubmissionDetailResponse
+    form_title: str
+    office_name: str
+    can_reprint: bool = True
+
+# Kiosk Help
+class KioskHelpRequestCreate(BaseModel):
+    kiosk_name: Optional[str] = None
+
+class KioskHelpRequestResponse(BaseModel):
+    id: int
+    kiosk_id: Optional[int] = None
+    kiosk_name: Optional[str] = None
+    status: str
+    created_at: datetime
+    resolved_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+# Audit Log
+class AuditLogResponse(BaseModel):
+    id: int
+    actor_id: Optional[int] = None
+    actor_role: Optional[str] = None
+    action: str
+    target_type: Optional[str] = None
+    target_id: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

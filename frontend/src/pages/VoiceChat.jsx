@@ -5,11 +5,18 @@ import { userFormsApi } from '../api/client';
 import { useVad } from '../hooks/useVad';
 import { useSpeech } from '../hooks/useSpeech';
 import { Navbar } from '../components/Navbar';
+import { EmergencyNotice } from '../components/EmergencyNotice';
+import { Sheet } from '../components/Sheet';
+import { MicControl } from '../components/MicControl';
+import { ConversationMessage } from '../components/ConversationMessage';
 import { PrivacyNoticeModal } from '../components/PrivacyNoticeModal';
+import { Toast } from '../components/Toast';
+import { NameChoices } from '../components/NameChoices';
+import { EditBanner } from '../components/EditBanner';
+import { Drawer } from '../components/Drawer';
+import { brandConfig } from '../brand';
 import {
-  Mic, MicOff, Send, CheckCircle2, ArrowLeft, RotateCcw, Volume2, VolumeX,
-  Globe, ShieldCheck, Sparkles, AlertCircle, Edit3, Activity, Code, Lock, X, Undo2, Headphones,
-  Paperclip, Upload, FileText, Check, AlertTriangle, Info, CheckCheck
+  ArrowLeft, Upload, FileText, X, Send, Undo2, Code, ChevronUp, AlertCircle
 } from 'lucide-react';
 
 const VAD_SILENCE_CONFIG = {
@@ -32,6 +39,7 @@ export const VoiceChat = () => {
   const [speechEnabled, setSpeechEnabled] = useState(true);
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [debugPanelOpen, setDebugPanelOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Server State Truth
   const [currentField, setCurrentField] = useState(null);
@@ -46,16 +54,13 @@ export const VoiceChat = () => {
   const [allAnswered, setAllAnswered] = useState(false);
   const [canEdit, setCanEdit] = useState(true);
   const [submissionStatus, setSubmissionStatus] = useState('in_progress');
+  const [formTitle, setFormTitle] = useState('Intake Form');
 
   // Document Upload & Progress State
   const [docUploading, setDocUploading] = useState(false);
   const [docProgress, setDocProgress] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
-
-  // Proposal Editing Modal State
-  const [editingProposal, setEditingProposal] = useState(null);
-  const [editingProposalVal, setEditingProposalVal] = useState('');
 
   // Notifications & Toast
   const [undoToast, setUndoToast] = useState(null);
@@ -118,8 +123,9 @@ export const VoiceChat = () => {
   }, []);
 
   useEffect(() => {
+    const isDev = import.meta.env.DEV || new URLSearchParams(window.location.search).get('debug') === '1';
     const handleKeyDown = (e) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+      if (isDev && e.ctrlKey && e.shiftKey && e.key === 'D') {
         e.preventDefault();
         setDebugPanelOpen((prev) => !prev);
       }
@@ -147,13 +153,13 @@ export const VoiceChat = () => {
     }
 
     if (isEditing) {
-      const friendlyName = fieldObj.field_name.replace('_', ' ');
-      qText = `Okay, let's redo your ${friendlyName}. ${qText}`;
+      const friendlyName = fieldObj.field_name.replace(/_/g, ' ');
+      qText = `Let's change your ${friendlyName}. ${qText}`;
     }
 
     setChatMessages((prev) => [
       ...prev,
-      { sender: 'bot', text: qText, fieldName: fieldObj.field_name, fieldId: fieldObj.id }
+      { sender: 'bot', text: qText, fieldName: fieldObj.field_name, fieldId: fieldObj.id, lang: speakLang }
     ]);
 
     speak(qText, speakLang, () => {
@@ -171,6 +177,7 @@ export const VoiceChat = () => {
     if ('all_answered' in data) setAllAnswered(data.all_answered);
     if ('can_edit' in data) setCanEdit(data.can_edit);
     if ('submission_status' in data) setSubmissionStatus(data.submission_status);
+    if (data.form_title) setFormTitle(data.form_title);
 
     if (data.answers) {
       const updatedAns = {};
@@ -204,15 +211,16 @@ export const VoiceChat = () => {
         applyServerState(data);
         if (data.submission_status === 'submitted') {
           setChatMessages([
-            { sender: 'bot', text: '🔒 This form has already been submitted and is locked for editing.' }
+            { sender: 'bot', text: 'This form has been submitted and is locked.' }
           ]);
         } else if (data.all_answered || data.mode === 'review') {
           setChatMessages([
-            { sender: 'bot', text: '🎉 All questions answered. Review your answers, edit anything, then press Submit.' }
+            { sender: 'bot', text: 'All questions answered. Check your answers, change anything, then submit.' }
           ]);
         } else if (data.current_field) {
+          const title = data.form_title || 'your intake form';
           setChatMessages([
-            { sender: 'bot', text: "👋 Welcome! Let's fill out this form." }
+            { sender: 'bot', text: `Hello. I'll help you fill in ${title}. I'll ask one question at a time. You can speak or type, and you can change any answer before you submit.` }
           ]);
           promptFieldQuestion(data.current_field, uiLang);
         }
@@ -266,13 +274,13 @@ export const VoiceChat = () => {
           const fieldObj = fields.find((f) => f.id === data.field_id);
           setUndoToast({
             fieldId: data.field_id,
-            fieldName: fieldObj ? fieldObj.field_name.replace('_', ' ') : 'field'
+            fieldName: fieldObj ? fieldObj.field_name.replace(/_/g, ' ') : 'field'
           });
           setTimeout(() => setUndoToast(null), 5000);
         }
 
         if (data.mode === 'review' || data.all_answered) {
-          const completionMsg = '🎉 All questions answered. Review your answers, edit anything, then press Submit.';
+          const completionMsg = 'All questions answered. Check your answers, change anything, then submit.';
           setChatMessages((prev) => [...prev, { sender: 'bot', text: completionMsg }]);
           speak(completionMsg, 'en');
         } else if (data.current_field) {
@@ -306,7 +314,7 @@ export const VoiceChat = () => {
       else if (data.type === 'submitted') {
         applyServerState(data);
         setSubmitting(false);
-        const submittedMsg = '🎉 Form successfully submitted! Thank you.';
+        const submittedMsg = `Form submitted. Your answers have been sent to ${brandConfig.hospitalName}.`;
         setChatMessages((prev) => [...prev, { sender: 'bot', text: submittedMsg }]);
         speak(submittedMsg, 'en');
       }
@@ -315,7 +323,7 @@ export const VoiceChat = () => {
         setSubmitting(false);
         setChatMessages((prev) => [
           ...prev,
-          { sender: 'bot', text: `⚠️ ${data.message}`, isError: true }
+          { sender: 'bot', text: data.message, isError: true }
         ]);
       }
     };
@@ -327,7 +335,6 @@ export const VoiceChat = () => {
     };
   }, [submissionId, token]);
 
-  // Document File Upload Handler
   const handleUploadFile = async (file) => {
     if (!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
@@ -343,7 +350,7 @@ export const VoiceChat = () => {
     }
 
     setDocUploading(true);
-    setDocProgress({ message: 'Uploading document...', progress: 5 });
+    setDocProgress({ message: 'Reading document...', progress: 10 });
 
     const formData = new FormData();
     formData.append('file', file);
@@ -364,23 +371,21 @@ export const VoiceChat = () => {
 
       setChatMessages((prev) => [
         ...prev,
-        { sender: 'bot', text: `📄 ${data.message || 'Extracted proposals from document.'}` }
+        { sender: 'system', text: data.message || 'Extracted answers from document.' }
       ]);
       if (data.proposals) {
         setProposals(data.proposals);
       }
     } catch (err) {
-      alert(`Document Upload Error: ${err.message}`);
       setChatMessages((prev) => [
         ...prev,
-        { sender: 'bot', text: `⚠️ Document processing error: ${err.message}`, isError: true }
+        { sender: 'bot', text: `Couldn't read document: ${err.message}. Please check your file or answer by voice or text.`, isError: true }
       ]);
     } finally {
       setDocUploading(false);
     }
   };
 
-  // Drag & Drop Handlers
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -399,52 +404,11 @@ export const VoiceChat = () => {
     }
   };
 
-  // Proposal Actions via WebSocket
-  const handleAcceptProposals = (proposalIds = null) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'accept_proposals',
-        proposal_ids: proposalIds
-      }));
-    }
-  };
-
-  const handleDismissProposal = (proposalId) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'dismiss_proposal',
-        proposal_id: proposalId
-      }));
-    }
-  };
-
-  const handleEditProposalSubmit = (e) => {
-    e.preventDefault();
-    if (!editingProposal || !editingProposalVal.trim()) return;
-
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({
-        type: 'edit_proposal',
-        proposal_id: editingProposal.id,
-        new_value: editingProposalVal.trim()
-      }));
-    }
-    setEditingProposal(null);
-    setEditingProposalVal('');
-  };
-
   const handleGotoField = (fieldId) => {
     if (submissionStatus === 'submitted') return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'goto', field_id: fieldId }));
       inputRef.current?.focus();
-    }
-  };
-
-  const handleBackButton = () => {
-    if (submissionStatus === 'submitted') return;
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'back' }));
     }
   };
 
@@ -510,14 +474,15 @@ export const VoiceChat = () => {
   };
 
   const activeEditingField = fields.find((f) => f.id === editingFieldId) || currentField;
-  const eligibleAcceptAllCount = proposals.filter((p) => !p.is_excluded_from_accept_all).length;
+  const isDev = import.meta.env.DEV || new URLSearchParams(window.location.search).get('debug') === '1';
+  const answeredCount = fields.filter(f => answers[f.id] !== undefined && answers[f.id] !== null && String(answers[f.id]).trim() !== '').length;
 
   return (
     <div
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="min-h-screen bg-[#022B3A] text-[#FFFFFF] flex flex-col h-screen overflow-hidden relative"
+      className="min-h-screen bg-[#DCE7E0] text-[#2A2E2C] flex flex-col h-screen overflow-hidden relative font-sans-ui"
     >
       <Navbar
         uiLang={uiLang}
@@ -526,475 +491,231 @@ export const VoiceChat = () => {
         setSpeechEnabled={setSpeechEnabled}
       />
 
+      <EmergencyNotice />
+
       <PrivacyNoticeModal
         isOpen={privacyModalOpen}
         onClose={() => setPrivacyModalOpen(false)}
       />
 
-      {/* Drag & Drop Visual Overlay */}
+      {/* Drag Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-indigo-950/90 backdrop-blur-md flex flex-col items-center justify-center border-4 border-dashed border-indigo-400 animate-fade-in pointer-events-none">
-          <Upload className="w-16 h-16 text-indigo-400 mb-4 animate-bounce" />
-          <h2 className="text-2xl font-bold text-white">Drop Document Here</h2>
-          <p className="text-sm text-indigo-200 mt-2">Only .pdf and .docx files will be extracted via Vision AI</p>
+        <div className="absolute inset-0 z-50 bg-[#F6F8F5]/90 flex flex-col items-center justify-center border-4 border-dashed border-[#1F3FBF] pointer-events-none">
+          <Upload className="w-16 h-16 text-[#1F3FBF] mb-4" />
+          <h2 className="text-2xl font-bold font-serif text-[#2A2E2C]">Drop document to upload</h2>
+          <p className="text-sm text-[#2A2E2C]/75 mt-1">Only .pdf and .docx files are accepted</p>
         </div>
       )}
 
-      {/* Main Grid: Left Chat (65%) | Right Side Panel (35%) */}
+      {/* Main Container */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 flex gap-6 overflow-hidden">
-        {/* LEFT: Voice Chat Panel */}
-        <div className="flex-1 bg-[#022B3A] border border-[#1F7A8C]/40 rounded-3xl flex flex-col overflow-hidden shadow-2xl relative">
+        {/* LEFT COLUMN: Conversation Thread & Controls */}
+        <div className="flex-1 bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg sheet-shadow flex flex-col overflow-hidden relative">
           {/* Header */}
-          <div className="p-4 border-b border-[#1F7A8C]/30 flex items-center justify-between bg-[#022B3A]">
+          <div className="p-4 border-b border-[#DCE7E0] flex items-center justify-between bg-[#F6F8F5]">
             <div className="flex items-center space-x-3">
               <Link
                 to="/user"
-                className="p-2 bg-[#1F7A8C]/30 hover:bg-[#1F7A8C]/60 text-[#BFDBF7] hover:text-[#FFFFFF] rounded-xl transition-colors border border-[#1F7A8C]/40"
+                className="p-2 text-[#2A2E2C]/75 hover:text-[#2A2E2C] rounded transition-colors focus:ring-2 focus:ring-[#1F3FBF]"
+                aria-label="Back to forms"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h2 className="text-base font-bold text-[#FFFFFF] flex items-center space-x-2">
-                  <span>Voice & Document Assistant</span>
-                  {submissionStatus === 'submitted' ? (
-                    <Lock className="w-4 h-4 text-[#BFDBF7]" />
-                  ) : (
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  )}
+                <h2 className="text-base font-bold font-serif text-[#2A2E2C]">
+                  {formTitle}
                 </h2>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-xs text-[#2A2E2C]/75">
                   {submissionStatus === 'submitted'
-                    ? '🔒 Form submitted & locked'
+                    ? 'Form submitted and locked'
                     : mode === 'editing'
-                    ? `✏️ Editing: ${activeEditingField?.field_name.replace('_', ' ')}`
-                    : allAnswered || mode === 'review'
-                    ? '🎉 Review stage: All required questions answered'
+                    ? `Editing: ${activeEditingField?.field_name.replace(/_/g, ' ')}`
+                    : allAnswered
+                    ? 'All questions answered'
                     : currentField
-                    ? `Current Field: ${currentField.field_name.replace('_', ' ')} (${currentField.data_type})`
-                    : 'Session active'}
+                    ? `Question: ${currentField.field_name.replace(/_/g, ' ')}`
+                    : 'Intake session'}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <span
-                className={`px-2.5 py-1 rounded-full text-xs font-mono font-semibold flex items-center space-x-1 border ${
-                  permissionState === 'granted'
-                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                    : permissionState === 'denied'
-                    ? 'bg-red-950 text-red-300 border-red-800'
-                    : 'bg-amber-950 text-amber-300 border-amber-800'
-                }`}
-              >
-                <Mic className="w-3 h-3" />
-                <span>Mic: {permissionState}</span>
-              </span>
+            <div className="flex items-center space-x-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => e.target.files && handleUploadFile(e.target.files[0])}
+                accept=".pdf,.docx"
+                className="hidden"
+              />
+              {submissionStatus !== 'submitted' && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={docUploading}
+                  className="px-3 py-1.5 border border-[#DCE7E0] hover:bg-[#DCE7E0]/50 text-[#2A2E2C] text-xs font-semibold rounded flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  title="Upload patient record or document"
+                >
+                  <Upload className="w-3.5 h-3.5 text-[#1F3FBF]" />
+                  <span className="hidden sm:inline">Upload document</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => setDebugPanelOpen(!debugPanelOpen)}
-                className={`p-2 rounded-xl border text-xs font-mono transition-colors flex items-center space-x-1 ${
-                  debugPanelOpen ? 'bg-indigo-950 text-indigo-300 border-indigo-700' : 'bg-slate-800/60 text-slate-400 border-slate-700'
-                }`}
-                title="Toggle Latency & Debug Panel"
-              >
-                <Code className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Debug</span>
-              </button>
+              {isDev && (
+                <button
+                  type="button"
+                  onClick={() => setDebugPanelOpen(!debugPanelOpen)}
+                  className="p-2 text-[#2A2E2C]/75 hover:text-[#1F3FBF] rounded text-xs font-mono"
+                  title="Toggle debug panel"
+                >
+                  <Code className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Document Status / Progress Banner */}
-          {docProgress && (
-            <div className="mx-4 mt-3 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-700 text-indigo-200 text-xs shadow-lg animate-fade-in space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold flex items-center space-x-2">
-                  <FileText className="w-4 h-4 text-indigo-400 animate-spin" />
-                  <span>{docProgress.message}</span>
-                </span>
-                <span className="font-mono text-indigo-300">{docProgress.progress}%</span>
-              </div>
-              <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-indigo-500 h-full transition-all duration-300"
-                  style={{ width: `${docProgress.progress}%` }}
-                />
-              </div>
+          {/* Edit Banner */}
+          {mode === 'editing' && activeEditingField && (
+            <div className="p-2 px-4 bg-[#FFE45C] border-b border-[#DCE7E0]">
+              <EditBanner
+                fieldName={activeEditingField.field_name}
+                onCancel={handleCancelEditing}
+                uiLang={uiLang}
+              />
             </div>
           )}
 
-          {/* Headphone Hint */}
-          {headphoneHint && (
-            <div className="mx-4 mt-3 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-700 text-indigo-200 text-xs flex items-center justify-between shadow-lg animate-fade-in">
-              <div className="flex items-center space-x-2">
-                <Headphones className="w-4 h-4 text-indigo-400" />
-                <span>Audio echo detected multiple times. Using headphones is recommended for best accuracy.</span>
-              </div>
-              <button onClick={() => setHeadphoneHint(false)} className="text-indigo-400 hover:text-white">
-                <X className="w-3.5 h-3.5" />
-              </button>
+          {/* Undo Toast */}
+          {undoToast && (
+            <div className="px-4 pt-2">
+              <Toast
+                message={`Updated ${undoToast.fieldName}.`}
+                onUndo={handleUndo}
+                uiLang={uiLang}
+              />
             </div>
           )}
 
-          {/* Chat Messages */}
+          {/* Conversation Thread */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {chatMessages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-md transition-all ${
-                    msg.replaced
-                      ? 'bg-slate-950/40 border border-slate-800/50 text-slate-500 line-through'
-                      : msg.isError
-                      ? 'bg-red-950 border border-red-800 text-red-200'
-                      : msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-none'
-                      : 'bg-slate-950 border border-slate-800 text-slate-200 rounded-bl-none'
-                  }`}
-                >
-                  <p>{msg.text}</p>
-                </div>
-              </div>
+              <ConversationMessage key={idx} message={msg} />
             ))}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Bottom Controls Bar */}
-          <div className="p-4 border-t border-slate-800 bg-slate-950/80 space-y-3">
-            <div className="flex items-center justify-center space-x-4">
+          {/* Mic & Text Input Action Area */}
+          <div className="p-4 border-t border-[#DCE7E0] bg-[#F6F8F5] space-y-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <MicControl
+                vadState={vadState}
+                isListening={isListening}
+                permissionState={permissionState}
+                isDisabled={submissionStatus === 'submitted'}
+                onTapMic={handleMicTap}
+                uiLang={uiLang}
+              />
+
+              {/* Mobile Drawer Toggle */}
               <button
                 type="button"
-                onClick={handleMicTap}
-                disabled={submissionStatus === 'submitted'}
-                className={`relative p-5 rounded-full shadow-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                  vadState === 'speech_detected'
-                    ? 'bg-red-600 text-white animate-pulse-ring scale-110'
-                    : isListening
-                    ? 'bg-indigo-600 text-white animate-pulse'
-                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                }`}
+                onClick={() => setDrawerOpen(true)}
+                className="lg:hidden w-full sm:w-auto py-2 px-3 border border-[#DCE7E0] rounded text-xs text-[#2A2E2C] font-semibold flex items-center justify-between space-x-2"
               >
-                {isListening ? <Mic className="w-7 h-7" /> : <MicOff className="w-7 h-7" />}
+                <span>{currentField ? currentField.field_name.replace(/_/g, ' ') : 'Sheet'}</span>
+                <span className="text-[#1F3FBF] flex items-center space-x-1">
+                  <span>{answeredCount} of {fields.length} answered</span>
+                  <ChevronUp className="w-4 h-4" />
+                </span>
               </button>
-
-              <div className="text-xs font-mono uppercase tracking-wider">
-                {submissionStatus === 'submitted' ? (
-                  <span className="text-slate-500">FORM SUBMITTED (READ-ONLY)</span>
-                ) : vadState === 'speech_detected' ? (
-                  <span className="text-red-400 font-bold flex items-center space-x-1">
-                    <Activity className="w-3.5 h-3.5 animate-spin" />
-                    <span>Speech Detected...</span>
-                  </span>
-                ) : vadState === 'listening' ? (
-                  <span className="text-indigo-400 font-semibold">Listening (Silero VAD)...</span>
-                ) : vadState === 'processing' ? (
-                  <span className="text-purple-400 font-semibold">Transcribing & Extracting...</span>
-                ) : (
-                  <span className="text-slate-500">MIC PAUSED (TAP TO SPEAK)</span>
-                )}
-              </div>
             </div>
 
-            {/* Input Bar with Paperclip Attach Button */}
-            <form onSubmit={handleSendText} className="flex items-center space-x-2 pt-2">
-              <button
-                type="button"
-                onClick={handleBackButton}
-                disabled={currentIndex === 0 || submissionStatus === 'submitted'}
-                className="p-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-300 rounded-xl transition-colors flex items-center space-x-1 text-xs font-semibold"
-                title="Go back"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back</span>
-              </button>
-
-              {/* Hidden File Input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    handleUploadFile(e.target.files[0]);
-                  }
-                }}
-              />
-
-              {/* Attach Paperclip Button */}
-              <button
-                type="button"
-                disabled={submissionStatus === 'submitted' || docUploading}
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2.5 bg-indigo-950/80 border border-indigo-700/60 hover:bg-indigo-900 text-indigo-300 hover:text-white disabled:opacity-40 rounded-xl transition-colors flex items-center space-x-1"
-                title="Attach Document (.pdf, .docx)"
-              >
-                <Paperclip className="w-4 h-4" />
-              </button>
-
-              <input
-                ref={inputRef}
-                type="text"
-                value={textInput}
-                disabled={submissionStatus === 'submitted'}
-                onChange={(e) => setTextInput(e.target.value)}
-                placeholder={
-                  submissionStatus === 'submitted'
-                    ? 'Form has already been submitted.'
-                    : mode === 'editing' && activeEditingField
-                    ? `Type updated ${activeEditingField.field_name.replace('_', ' ')}...`
-                    : "Type response or 'accept all'..."
-                }
-                className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none placeholder-slate-500 disabled:opacity-50"
-              />
-
-              <button
-                type="submit"
-                disabled={submissionStatus === 'submitted'}
-                className="p-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl transition-colors"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
+            {/* Text Input Fallback */}
+            {submissionStatus !== 'submitted' && (
+              <form onSubmit={handleSendText} className="flex items-center space-x-2 pt-1">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Type your answer..."
+                  className="flex-1 bg-[#F6F8F5] border border-[#DCE7E0] rounded px-4 py-2.5 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={!textInput.trim()}
+                  className="px-4 py-2.5 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F6F8F5] font-semibold text-sm rounded transition-colors disabled:opacity-40 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
+                >
+                  Send
+                </button>
+              </form>
+            )}
           </div>
         </div>
 
-        {/* RIGHT: Live Form & Proposals Panel */}
-        <div className="hidden lg:flex w-96 bg-[#022B3A] border border-[#1F7A8C]/40 rounded-3xl flex-col shadow-2xl p-6 space-y-6 overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#1F7A8C]/30 pb-4">
-            <div>
-              <h3 className="font-bold text-[#FFFFFF] text-base">Live Form & Proposals</h3>
-              <p className="text-xs text-[#E1E5F2]">
-                {submissionStatus === 'submitted' ? 'Form submitted (read-only)' : 'Confirm extracted proposals or edit.'}
-              </p>
-            </div>
-            <div className="px-2.5 py-1 bg-[#1F7A8C]/30 text-[#BFDBF7] border border-[#1F7A8C] rounded-lg text-xs font-mono font-bold">
-              {Object.keys(answers).length} / {fields.length}
-            </div>
-          </div>
-
-          {/* Document Proposals Section */}
-          {proposals.length > 0 && submissionStatus !== 'submitted' && (
-            <div className="p-4 rounded-2xl bg-indigo-950/70 border border-indigo-800/80 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-indigo-200 uppercase tracking-wider flex items-center space-x-1.5">
-                  <Sparkles className="w-4 h-4 text-indigo-400" />
-                  <span>Document Proposals ({proposals.length})</span>
-                </span>
-
-                {eligibleAcceptAllCount > 0 && (
-                  <button
-                    onClick={() => handleAcceptProposals(null)}
-                    className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg flex items-center space-x-1 shadow transition-colors"
-                  >
-                    <CheckCheck className="w-3.5 h-3.5" />
-                    <span>Accept All ({eligibleAcceptAllCount})</span>
-                  </button>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                {proposals.map((prop) => (
-                  <div key={prop.id} className="p-3 bg-slate-900/90 border border-indigo-900/80 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-indigo-300">{prop.field_name?.replace('_', ' ')}</span>
-                      <span className="font-mono text-[10px] text-slate-400">
-                        Page {prop.page || 1} • {prop.read_method}
-                      </span>
-                    </div>
-
-                    <p className="text-sm font-bold text-white bg-slate-950 p-2 rounded border border-slate-800">
-                      {prop.value}
-                    </p>
-
-                    {/* Scanned Warning Badge */}
-                    {prop.scanned_warning && (
-                      <div className="p-1.5 bg-amber-950/80 border border-amber-800/80 text-amber-300 text-[11px] rounded flex items-center space-x-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>{prop.scanned_warning}</span>
-                      </div>
-                    )}
-
-                    {/* Excluded from Accept All Note */}
-                    {prop.is_excluded_from_accept_all && (
-                      <p className="text-[10px] text-amber-400/80 italic font-mono">
-                        *Scanned value: verify & accept individually.
-                      </p>
-                    )}
-
-                    {/* Evidence / Quote */}
-                    {prop.evidence && (
-                      <p className="text-[11px] text-slate-400 italic">
-                        "{prop.evidence}"
-                      </p>
-                    )}
-
-                    {/* Alternative Choices */}
-                    {prop.alternatives && prop.alternatives.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        <span className="text-[10px] text-slate-400">Alts:</span>
-                        {prop.alternatives.map((alt, aIdx) => (
-                          <button
-                            key={aIdx}
-                            onClick={() => {
-                              setEditingProposal(prop);
-                              setEditingProposalVal(alt);
-                            }}
-                            className="px-1.5 py-0.5 bg-slate-800 hover:bg-indigo-900 text-indigo-300 text-[10px] rounded border border-slate-700"
-                          >
-                            {alt}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Proposal Action Buttons */}
-                    <div className="flex items-center justify-end space-x-2 pt-1 border-t border-slate-800">
-                      <button
-                        onClick={() => handleDismissProposal(prop.id)}
-                        className="px-2 py-1 bg-slate-800 hover:bg-red-950 text-slate-300 hover:text-red-300 text-xs rounded flex items-center space-x-1"
-                        title="Dismiss proposal"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        <span>Dismiss</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditingProposal(prop);
-                          setEditingProposalVal(prop.value);
-                        }}
-                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded flex items-center space-x-1"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleAcceptProposals([prop.id])}
-                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded flex items-center space-x-1"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Accept</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Form Fields List */}
-          <div className="space-y-3 flex-1">
-            {fields.map((field) => {
-              const isCurrent = currentField?.id === field.id;
-              const isEditingThis = mode === 'editing' && editingFieldId === field.id;
-              const hasAnswer = answers[field.id] !== undefined && answers[field.id] !== null && String(answers[field.id]).trim() !== '';
-
-              return (
-                <div
-                  key={field.id}
-                  className={`p-4 rounded-2xl border transition-all ${
-                    isEditingThis
-                      ? 'bg-[#1F7A8C]/50 border-[#BFDBF7] shadow-lg scale-[1.02]'
-                      : isCurrent
-                      ? 'bg-[#1F7A8C]/30 border-[#1F7A8C] shadow-lg'
-                      : hasAnswer
-                      ? 'bg-[#022B3A] border-[#1F7A8C]/40'
-                      : 'bg-[#022B3A]/60 border-[#1F7A8C]/20 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-semibold text-[#E1E5F2] flex items-center space-x-1.5">
-                      <span>{field.field_name.replace('_', ' ')}</span>
-                      {hasAnswer && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500 uppercase">
-                      {field.data_type}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-sm font-bold truncate max-w-[220px]">
-                      {hasAnswer ? (
-                        <span className={isEditingThis ? 'text-emerald-400/50 italic' : 'text-emerald-400'}>
-                          {answers[field.id]} {isEditingThis && '(editing...)'}
-                        </span>
-                      ) : (
-                        <span className="text-slate-600 font-normal italic">Unfilled</span>
-                      )}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => handleGotoField(field.id)}
-                      disabled={submissionStatus === 'submitted'}
-                      className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-800 disabled:opacity-30 rounded transition-colors"
-                      title={`Redo ${field.field_name.replace('_', ' ')}`}
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Submit Button */}
-          <div className="space-y-1">
-            <button
-              onClick={handleCompleteSubmission}
-              disabled={submitting || mode === 'editing' || !allAnswered || submissionStatus === 'submitted'}
-              className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-xl text-sm shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submissionStatus === 'submitted' ? (
-                <>
-                  <Lock className="w-4 h-4 text-emerald-300" />
-                  <span>Submitted & Locked</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{submitting ? 'Submitting...' : 'Complete & Submit Form'}</span>
-                </>
-              )}
-            </button>
-          </div>
+        {/* RIGHT COLUMN: The Sheet (Desktop Only) */}
+        <div className="hidden lg:block w-[380px] xl:w-[420px] shrink-0 h-full">
+          <Sheet
+            formTitle={formTitle}
+            fields={fields}
+            answers={answers}
+            currentFieldId={currentField?.id}
+            editingFieldId={editingFieldId}
+            mode={mode}
+            allAnswered={allAnswered}
+            submissionStatus={submissionStatus}
+            submitting={submitting}
+            onSubmit={handleCompleteSubmission}
+            onGotoField={handleGotoField}
+            uiLang={uiLang}
+          />
         </div>
       </div>
 
-      {/* Edit Proposal Value Modal */}
-      {editingProposal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in">
-          <form onSubmit={handleEditProposalSubmit} className="max-w-md w-full bg-slate-900 border border-indigo-900/80 rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white">Edit Proposal Value</h3>
-            <p className="text-xs text-indigo-300">Field: {editingProposal.field_name}</p>
+      {/* Mobile Sheet Bottom Drawer */}
+      <Drawer
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title={`${formTitle} - Slip`}
+      >
+        <div className="h-[60dvh]">
+          <Sheet
+            formTitle={formTitle}
+            fields={fields}
+            answers={answers}
+            currentFieldId={currentField?.id}
+            editingFieldId={editingFieldId}
+            mode={mode}
+            allAnswered={allAnswered}
+            submissionStatus={submissionStatus}
+            submitting={submitting}
+            onSubmit={handleCompleteSubmission}
+            onGotoField={(fId) => {
+              handleGotoField(fId);
+              setDrawerOpen(false);
+            }}
+            uiLang={uiLang}
+          />
+        </div>
+      </Drawer>
 
-            <div className="space-y-1">
-              <label className="text-xs text-slate-400 font-mono">Value</label>
-              <input
-                type="text"
-                value={editingProposalVal}
-                onChange={(e) => setEditingProposalVal(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setEditingProposal(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-500 shadow"
-              >
-                Save & Accept
-              </button>
-            </div>
-          </form>
+      {/* Debug Panel (Only when DEV or ?debug=1) */}
+      {isDev && debugPanelOpen && (
+        <div className="fixed bottom-0 right-0 w-96 max-h-80 bg-[#2A2E2C] text-[#F6F8F5] p-4 font-mono text-xs overflow-y-auto z-50 border-t-2 border-[#1F3FBF] shadow-2xl">
+          <div className="flex items-center justify-between pb-2 border-b border-[#F6F8F5]/20 mb-2">
+            <span className="font-bold text-[#FFE45C]">DEBUG PANEL</span>
+            <button onClick={() => setDebugPanelOpen(false)} className="text-white hover:text-[#FFE45C]">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="space-y-1">
+            <p>Submission ID: {submissionId}</p>
+            <p>VAD State: {vadState}</p>
+            <p>Permission: {permissionState}</p>
+            <p>Mode: {mode}</p>
+            <p>Current Field: {currentField?.field_name || 'None'}</p>
+            <p>All Answered: {String(allAnswered)}</p>
+            <p>Latest Latency: {latestTiming ? JSON.stringify(latestTiming) : 'N/A'}</p>
+          </div>
         </div>
       )}
     </div>

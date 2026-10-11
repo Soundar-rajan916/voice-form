@@ -18,6 +18,10 @@ from app.services.navigation import parse_navigation_command
 from app.services.normalizer import normalize_transcript
 from app.services.grounding import verify_grounding
 from app.services.filters import check_echo_guard, check_hallucination_filter
+from app.services.reference_number import generate_reference_number
+from app.services.crypto import encrypt_field_value, mask_field_value
+from app.config import settings
+from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/ws", tags=["websocket"])
 
@@ -80,7 +84,34 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
             .where(Submission.id == submission_id)
         )
         submission = res.scalar_one_or_none()
-        if not submission or (submission.user_id != user_id and user_role != "admin"):
+        if not submission:
+            try:
+                await websocket.send_json({"type": "error", "message": "Submission not found"})
+                await websocket.close(code=4004)
+            except Exception:
+                pass
+            return
+
+        # Scoped Kiosk Token & Role isolation
+        scope = payload.get("scope")
+        if scope == "kiosk_session":
+            scoped_sub_id = payload.get("submission_id")
+            if scoped_sub_id != submission_id:
+                try:
+                    await websocket.send_json({"type": "error", "message": "Kiosk scoped token is restricted to its own session"})
+                    await websocket.close(code=4003)
+                except Exception:
+                    pass
+                return
+        elif user_role == "operator":
+            if submission.assisted_by != user_id and submission.user_id != user_id:
+                try:
+                    await websocket.send_json({"type": "error", "message": "Operators can only access their own assisted applications"})
+                    await websocket.close(code=4003)
+                except Exception:
+                    pass
+                return
+        elif user_role != "admin" and submission.user_id != user_id:
             try:
                 await websocket.send_json({"type": "error", "message": "Submission not found"})
                 await websocket.close(code=4004)
@@ -213,8 +244,13 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                             sub = res.scalar_one_or_none()
                             if sub:
                                 sub.status = "submitted"
-                                sub.submitted_at = datetime.utcnow()
-                                sub.completed_at = datetime.utcnow()
+                                now = datetime.utcnow()
+                                sub.submitted_at = now
+                                sub.completed_at = now
+                                if not sub.reference_number:
+                                    sub.reference_number = generate_reference_number("CS")
+                                if not sub.retention_expires_at:
+                                    sub.retention_expires_at = now + timedelta(days=settings.RETENTION_DAYS)
                                 await db.commit()
 
                         sub_msg = session.build_state_dict()
@@ -277,6 +313,13 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     await websocket.send_json({
                         "type": "error",
                         "message": "This form has already been submitted"
+                    })
+                    continue
+
+                if current_field and getattr(current_field, "is_sensitive_number", False):
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "Sensitive number fields must be typed directly for privacy and security."
                     })
                     continue
 
@@ -481,10 +524,15 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         is_grd, g_reason = verify_grounding(cleaned if is_valid else normalized_val, val, target_field_obj.data_type)
 
                         if is_valid and is_grd:
+                            is_sens = getattr(target_field_obj, "is_sensitive_number", False) if target_field_obj else False
+                            store_val = encrypt_field_value(cleaned) if is_sens else cleaned
+                            store_raw = None if is_sens else val
+                            display_val = mask_field_value(cleaned) if is_sens else cleaned
+
                             session.record_answer(
                                 field_id=target_field_id,
-                                value=cleaned,
-                                raw_transcript=val,
+                                value=display_val,
+                                raw_transcript=store_raw,
                                 language="typed",
                                 source="typed"
                             )
@@ -497,16 +545,16 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                                 )
                                 ans_db = res.scalar_one_or_none()
                                 if ans_db:
-                                    ans_db.value = cleaned
-                                    ans_db.raw_transcript = val
+                                    ans_db.value = store_val
+                                    ans_db.raw_transcript = store_raw
                                     ans_db.language = "typed"
                                     ans_db.source = "typed"
                                 else:
                                     ans_db = SubmissionAnswer(
                                         submission_id=submission_id,
                                         field_id=target_field_id,
-                                        value=cleaned,
-                                        raw_transcript=val,
+                                        value=store_val,
+                                        raw_transcript=store_raw,
                                         language="typed",
                                         source="typed"
                                     )
@@ -519,7 +567,7 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                             ans_msg.update({
                                 "type": "answer",
                                 "field_id": target_field_id,
-                                "value": cleaned,
+                                "value": display_val,
                                 "fulfilled": True
                             })
                             await websocket.send_json(ans_msg)

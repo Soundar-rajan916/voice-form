@@ -15,8 +15,10 @@ from app import models, schemas
 from app.db import get_db
 from app.deps import get_current_user
 from app.services.document_extractor import extract_proposals_from_document
-from app.services.document_parser import parse_pdf_document, parse_docx_document
+from app.services.document_parser import parse_pdf_document, parse_docx_document, parse_image_document
 from app.services.session import session_manager
+from app.deps import check_submission_access
+from app.services.audit import record_audit_event
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +64,7 @@ async def upload_document_for_submission(
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found.")
 
-    if submission.user_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Access denied.")
+    check_submission_access(submission, current_user)
 
     if submission.status != "in_progress":
         raise HTTPException(status_code=400, detail="Document upload is only allowed for in-progress submissions.")
@@ -84,15 +85,18 @@ async def upload_document_for_submission(
         .where(models.FormField.form_version_id == submission.form_version_id)
         .order_by(models.FormField.position)
     )
-    fields = fields_res.scalars().all()
+    all_fields = fields_res.scalars().all()
+    # Sensitive number fields have document and voice extraction strictly disabled
+    fields = [f for f in all_fields if not getattr(f, "is_sensitive_number", False)]
 
     # 2. File format & extension validation
     filename = file.filename or "document.pdf"
     ext = filename.split(".")[-1].lower()
-    if ext not in ["pdf", "docx"]:
+    allowed_exts = ["pdf", "docx", "jpg", "jpeg", "png", "webp"]
+    if ext not in allowed_exts:
         raise HTTPException(
             status_code=400,
-            detail="Unsupported file format. Only .pdf and .docx documents are accepted."
+            detail=f"Unsupported file format. Accepted formats: {', '.join(allowed_exts)}."
         )
 
     # Read bytes into memory
@@ -137,6 +141,16 @@ async def upload_document_for_submission(
                 raise e
             raise HTTPException(status_code=400, detail=f"Corrupted DOCX document: {e}")
 
+    elif ext in ["jpg", "jpeg"]:
+        if not content.startswith(b"\xff\xd8\xff"):
+            raise HTTPException(status_code=400, detail="Invalid JPEG image file header.")
+    elif ext == "png":
+        if not content.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise HTTPException(status_code=400, detail="Invalid PNG image file header.")
+    elif ext == "webp":
+        if not (content.startswith(b"RIFF") and len(content) >= 12 and content[8:12] == b"WEBP"):
+            raise HTTPException(status_code=400, detail="Invalid WebP image file header.")
+
     # 4. Notify WebSocket client about extraction status
     await session_manager.broadcast_status(submission_id, "Parsing document structure...", progress=10)
 
@@ -144,8 +158,10 @@ async def upload_document_for_submission(
     try:
         if ext == "pdf":
             parse_result = parse_pdf_document(content)
-        else:
+        elif ext == "docx":
             parse_result = parse_docx_document(content)
+        else:
+            parse_result = parse_image_document(content, filename)
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as parse_err:
@@ -250,6 +266,16 @@ async def upload_document_for_submission(
     out_msg = f"Extracted {len(prop_responses)} proposals from document."
     if parse_result.warning_msg:
         out_msg += f" ({parse_result.warning_msg})"
+
+    await record_audit_event(
+        db,
+        action="document_upload",
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        target_type="submission",
+        target_id=str(submission_id),
+        details={"filename": filename, "format": ext, "proposals_count": len(prop_responses)}
+    )
 
     return schemas.DocumentUploadResponse(
         submission_id=submission_id,

@@ -1,22 +1,31 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Login } from './pages/Login';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { FormBuilder } from './pages/FormBuilder';
-import { Submissions } from './pages/Submissions';
 import { UserHome } from './pages/UserHome';
 import { VoiceChat } from './pages/VoiceChat';
 import { Loader2 } from 'lucide-react';
+
+// Lazy-load staff routes for bundle optimization
+const AdminDashboard = lazy(() =>
+  import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
+const FormBuilder = lazy(() =>
+  import('./pages/FormBuilder').then((m) => ({ default: m.FormBuilder }))
+);
+const Submissions = lazy(() =>
+  import('./pages/Submissions').then((m) => ({ default: m.Submissions }))
+);
+const KioskMode = lazy(() => import('./pages/KioskMode'));
 
 const ProtectedRoute = ({ children, requireRole }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-3" />
-        <p className="text-xs">Authenticating session...</p>
+      <div className="min-h-screen bg-[#DCE7E0] flex flex-col items-center justify-center text-[#2A2E2C]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF] mb-3" />
+        <p className="text-xs font-sans-ui">Verifying session...</p>
       </div>
     );
   }
@@ -25,8 +34,12 @@ const ProtectedRoute = ({ children, requireRole }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireRole && user.role !== requireRole) {
-    return <Navigate to={user.role === 'admin' ? '/admin' : '/user'} replace />;
+  if (requireRole) {
+    const allowed = Array.isArray(requireRole) ? requireRole : [requireRole];
+    if (!allowed.includes(user.role)) {
+      if (user.role === 'admin') return <Navigate to="/admin" replace />;
+      return <Navigate to="/user" replace />;
+    }
   }
 
   return children;
@@ -37,78 +50,94 @@ const RootRedirect = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      <div className="min-h-screen bg-[#DCE7E0] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF]" />
       </div>
     );
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user.role === 'admin' ? '/admin' : '/user'} replace />;
+  if (user.role === 'admin') return <Navigate to="/admin" replace />;
+  if (user.role === 'kiosk') return <Navigate to="/kiosk" replace />;
+  return <Navigate to="/user" replace />;
 };
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/login" element={<Login />} />
+        <Suspense
+          fallback={
+            <div className="min-h-screen bg-[#DCE7E0] flex items-center justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF]" />
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/login" element={<Login />} />
 
-          {/* Admin Routes */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requireRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/builder/new"
-            element={
-              <ProtectedRoute requireRole="admin">
-                <FormBuilder />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/builder/:id"
-            element={
-              <ProtectedRoute requireRole="admin">
-                <FormBuilder />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/forms/:formId/submissions"
-            element={
-              <ProtectedRoute requireRole="admin">
-                <Submissions />
-              </ProtectedRoute>
-            }
-          />
+            {/* Kiosk Mode (Public / Kiosk Device Screen) */}
+            <Route path="/kiosk" element={<KioskMode />} />
 
-          {/* User Routes */}
-          <Route
-            path="/user"
-            element={
-              <ProtectedRoute>
-                <UserHome />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/fill/:submissionId"
-            element={
-              <ProtectedRoute>
-                <VoiceChat />
-              </ProtectedRoute>
-            }
-          />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+
+            {/* Admin (Staff) Routes */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/builder/new"
+              element={
+                <ProtectedRoute requireRole="admin">
+                  <FormBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/builder/:id"
+              element={
+                <ProtectedRoute requireRole="admin">
+                  <FormBuilder />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/forms/:formId/submissions"
+              element={
+                <ProtectedRoute requireRole="admin">
+                  <Submissions />
+                </ProtectedRoute>
+              }
+            />
+
+
+            {/* User (Citizen) Routes */}
+            <Route
+              path="/user"
+              element={
+                <ProtectedRoute>
+                  <UserHome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/fill/:submissionId"
+              element={
+                <ProtectedRoute>
+                  <VoiceChat />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   );

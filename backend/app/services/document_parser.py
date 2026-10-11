@@ -234,3 +234,45 @@ def parse_docx_document(docx_bytes: bytes) -> DocumentParseResult:
         ))
 
     return DocumentParseResult(pages=pages, warning_msg=warning_msg)
+
+
+def parse_image_document(image_bytes: bytes, filename: str = "document.jpg") -> DocumentParseResult:
+    """
+    Parses a single image file (JPEG, PNG, WebP) into a DocumentParseResult.
+    Strips EXIF metadata, normalizes to RGB JPEG in memory, and resizes if needed.
+    Keeps everything in memory without disk persistence.
+    """
+    try:
+        pil_img = Image.open(io.BytesIO(image_bytes))
+
+        # Create clean RGB image and strip EXIF
+        clean_img = Image.new("RGB", pil_img.size)
+        if pil_img.mode != "RGB":
+            converted = pil_img.convert("RGB")
+            clean_img.paste(converted)
+        else:
+            clean_img.paste(pil_img)
+
+        # Downscale if max dimension exceeds 1536px to respect vision model limits
+        max_dim = max(clean_img.width, clean_img.height)
+        if max_dim > 1536:
+            ratio = 1536.0 / max_dim
+            new_w = int(clean_img.width * ratio)
+            new_h = int(clean_img.height * ratio)
+            clean_img = clean_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
+        buf = io.BytesIO()
+        clean_img.save(buf, format="JPEG", quality=85)
+        clean_jpeg_bytes = buf.getvalue()
+
+        page = ProcessedPage(
+            page_num=1,
+            read_method="vision",
+            text="",
+            image_bytes=clean_jpeg_bytes
+        )
+        return DocumentParseResult(pages=[page], warning_msg=None)
+    except Exception as e:
+        logger.error(f"[Image Parse] Failed to parse image: {e}")
+        raise ValueError(f"Invalid or corrupted image file: {e}")
+

@@ -12,11 +12,16 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(255), unique=True, index=True, nullable=True)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False, default="user") # "admin" or "user"
+    role = Column(String(50), nullable=False, default="user") # "admin", "operator", "kiosk", "user"
+    is_active = Column(Boolean, default=True, nullable=False)
+    device_name = Column(String(255), nullable=True) # display name for kiosk device or operator
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     forms = relationship("Form", back_populates="creator", cascade="all, delete-orphan")
-    submissions = relationship("Submission", back_populates="user", cascade="all, delete-orphan")
+    submissions = relationship("Submission", foreign_keys="Submission.user_id", back_populates="user", cascade="all, delete-orphan")
+    assisted_submissions = relationship("Submission", foreign_keys="Submission.assisted_by", back_populates="assistant")
+    kiosk_submissions = relationship("Submission", foreign_keys="Submission.kiosk_id", back_populates="kiosk_device")
+    kiosk_help_requests = relationship("KioskHelpRequest", foreign_keys="KioskHelpRequest.kiosk_id", back_populates="kiosk", cascade="all, delete-orphan")
 
 class Form(Base):
     __tablename__ = "forms"
@@ -59,6 +64,7 @@ class FormField(Base):
     choices = Column(JSON, nullable=True) # list of str for Choice
     question_en = Column(Text, nullable=True)
     question_ta = Column(Text, nullable=True)
+    is_sensitive_number = Column(Boolean, default=False, nullable=False)
 
     form_version = relationship("FormVersion", back_populates="fields")
     answers = relationship("SubmissionAnswer", back_populates="field", cascade="all, delete-orphan")
@@ -76,9 +82,22 @@ class Submission(Base):
     completed_at = Column(DateTime, nullable=True)
     submitted_at = Column(DateTime, nullable=True)
 
+    # Citizen Service / Channel Extensions
+    reference_number = Column(String(32), unique=True, index=True, nullable=True)
+    channel = Column(String(30), default="online", nullable=False) # "self_service", "assisted", "online"
+    assisted_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    kiosk_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    consent_at = Column(DateTime, nullable=True)
+    consent_noted_by = Column(String(255), nullable=True)
+    language_chosen = Column(String(10), default="ta", nullable=False)
+    retention_expires_at = Column(DateTime, index=True, nullable=True)
+    print_count = Column(Integer, default=0, nullable=False)
+
     form = relationship("Form", back_populates="submissions")
     version = relationship("FormVersion", back_populates="submissions")
-    user = relationship("User", back_populates="submissions")
+    user = relationship("User", foreign_keys=[user_id], back_populates="submissions")
+    assistant = relationship("User", foreign_keys=[assisted_by], back_populates="assisted_submissions")
+    kiosk_device = relationship("User", foreign_keys=[kiosk_id], back_populates="kiosk_submissions")
     answers = relationship("SubmissionAnswer", back_populates="submission", cascade="all, delete-orphan")
     proposals = relationship("SubmissionProposal", back_populates="submission", cascade="all, delete-orphan")
 
@@ -116,3 +135,29 @@ class SubmissionProposal(Base):
 
     submission = relationship("Submission", back_populates="proposals")
     field = relationship("FormField", back_populates="proposals")
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor_id = Column(Integer, nullable=True)
+    actor_role = Column(String(50), nullable=True)
+    action = Column(String(50), nullable=False) # view, print, export, delete, role_change, kiosk_revoke, retention_cleanup
+    target_type = Column(String(50), nullable=True) # submission, user, kiosk, system
+    target_id = Column(String(100), nullable=True)
+    details = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+class KioskHelpRequest(Base):
+    __tablename__ = "kiosk_help_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    kiosk_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True)
+    kiosk_name = Column(String(255), nullable=True)
+    status = Column(String(50), default="pending", nullable=False) # "pending", "resolved"
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    resolved_at = Column(DateTime, nullable=True)
+    resolved_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    kiosk = relationship("User", foreign_keys=[kiosk_id], back_populates="kiosk_help_requests")
+    resolver = relationship("User", foreign_keys=[resolved_by])

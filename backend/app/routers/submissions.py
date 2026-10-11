@@ -1,20 +1,54 @@
-from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime, timedelta
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
 
+from app.config import settings
 from app.db import get_db
 from app.models import User, Form, FormVersion, FormField, Submission, SubmissionAnswer
 from app.schemas import (
     SubmissionResponse, SubmissionDetailResponse, SubmissionAnswerCreate,
-    SubmissionAnswerResponse, FormFieldResponse
+    SubmissionAnswerResponse, FormFieldResponse, ReferenceLookupResponse
 )
-from app.deps import require_user
+from app.deps import require_user, check_submission_access
 from app.services.submission_title import compute_submission_title, compute_submission_titles_batch
+from app.services.reference_number import generate_reference_number, validate_reference_number
+from app.services.crypto import encrypt_field_value, decrypt_field_value, mask_field_value
+from app.services.audit import record_audit_event
 
 router = APIRouter(tags=["user-submissions"])
+
+def _format_answers_for_response(answers: List[SubmissionAnswer], fields: List[FormField]) -> List[SubmissionAnswerResponse]:
+    """Decodes/masks answers according to sensitive number flags."""
+    field_map = {f.id: f for f in fields}
+    result = []
+    for a in answers:
+        f = field_map.get(a.field_id)
+        val = a.value
+        raw_tr = a.raw_transcript
+        if f and getattr(f, "is_sensitive_number", False) and val:
+            # Decrypt stored value and mask except last 4 digits
+            plain = decrypt_field_value(val)
+            val = mask_field_value(plain)
+            raw_tr = None # Sensitive number never stored in transcript
+
+        result.append(
+            SubmissionAnswerResponse(
+                id=a.id,
+                submission_id=a.submission_id,
+                field_id=a.field_id,
+                value=val,
+                raw_transcript=raw_tr,
+                language=a.language,
+                source=a.source,
+                evidence=a.evidence,
+                source_confidence=a.source_confidence,
+                updated_at=a.updated_at
+            )
+        )
+    return result
 
 @router.post("/forms/{form_id}/submissions", response_model=SubmissionDetailResponse, status_code=status.HTTP_201_CREATED)
 async def start_submission(
@@ -33,10 +67,32 @@ async def start_submission(
 
     latest_version = form.versions[-1]
 
+    channel = "online"
+    kiosk_id = None
+    assisted_by = None
+    consent_at = None
+    consent_noted_by = None
+
+    if current_user.role == "kiosk":
+        channel = "self_service"
+        kiosk_id = current_user.id
+        consent_at = datetime.utcnow()
+        consent_noted_by = "citizen"
+    elif current_user.role == "operator":
+        channel = "assisted"
+        assisted_by = current_user.id
+        consent_at = datetime.utcnow()
+        consent_noted_by = current_user.email
+
     submission = Submission(
         form_id=form.id,
         form_version_id=latest_version.id,
         user_id=current_user.id,
+        channel=channel,
+        kiosk_id=kiosk_id,
+        assisted_by=assisted_by,
+        consent_at=consent_at,
+        consent_noted_by=consent_noted_by,
         status="in_progress",
         started_at=datetime.utcnow()
     )
@@ -72,6 +128,15 @@ async def start_submission(
         submission_name=title_str,
         all_answered=False,
         can_edit=True,
+        reference_number=sub.reference_number,
+        channel=sub.channel,
+        assisted_by=sub.assisted_by,
+        kiosk_id=sub.kiosk_id,
+        consent_at=sub.consent_at,
+        consent_noted_by=sub.consent_noted_by,
+        language_chosen=sub.language_chosen,
+        retention_expires_at=sub.retention_expires_at,
+        print_count=sub.print_count or 0,
         answers=[],
         fields=[FormFieldResponse.model_validate(f) for f in sub.version.fields]
     )
@@ -81,7 +146,7 @@ async def list_user_submissions(
     current_user: User = Depends(require_user),
     db: AsyncSession = Depends(get_db)
 ):
-    res = await db.execute(
+    query = (
         select(Submission)
         .options(
             selectinload(Submission.form),
@@ -89,9 +154,19 @@ async def list_user_submissions(
             selectinload(Submission.answers),
             selectinload(Submission.user)
         )
-        .where(Submission.user_id == current_user.id)
-        .order_by(Submission.started_at.desc())
     )
+
+    if current_user.role == "admin":
+        pass # admin sees all
+    elif current_user.role == "operator":
+        # Operators see applications they assisted
+        query = query.where((Submission.assisted_by == current_user.id) | (Submission.user_id == current_user.id))
+    else:
+        query = query.where(Submission.user_id == current_user.id)
+
+    query = query.order_by(Submission.started_at.desc())
+
+    res = await db.execute(query)
     submissions = res.scalars().all()
     title_map = await compute_submission_titles_batch(db, submissions)
 
@@ -103,6 +178,8 @@ async def list_user_submissions(
         req_fields = [f for f in ver_fields if f.required]
         all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
         can_edit = (s.status == "in_progress")
+
+        formatted_answers = _format_answers_for_response(s.answers, ver_fields)
 
         result.append(
             SubmissionDetailResponse(
@@ -120,11 +197,114 @@ async def list_user_submissions(
                 submission_name=sub_title,
                 all_answered=all_ans,
                 can_edit=can_edit,
-                answers=[SubmissionAnswerResponse.model_validate(a) for a in s.answers],
+                reference_number=s.reference_number,
+                channel=s.channel,
+                assisted_by=s.assisted_by,
+                kiosk_id=s.kiosk_id,
+                consent_at=s.consent_at,
+                consent_noted_by=s.consent_noted_by,
+                language_chosen=s.language_chosen,
+                retention_expires_at=s.retention_expires_at,
+                print_count=s.print_count or 0,
+                answers=formatted_answers,
                 fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
             )
         )
     return result
+
+@router.get("/submissions/lookup", response_model=ReferenceLookupResponse)
+async def lookup_submission_by_reference(
+    ref: str = Query(..., description="Reference number (e.g. CS-241011-7K3M9QX2)"),
+    current_user: User = Depends(require_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Search and verify an application by its unique reference number.
+    Validates checksum before querying.
+    """
+    ref_clean = ref.strip().upper()
+    is_valid, _ = validate_reference_number(ref_clean)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid reference number checksum or format. Please check the receipt."
+        )
+
+    res = await db.execute(
+        select(Submission)
+        .options(
+            selectinload(Submission.form),
+            selectinload(Submission.version).selectinload(FormVersion.fields),
+            selectinload(Submission.answers),
+            selectinload(Submission.user)
+        )
+        .where(Submission.reference_number == ref_clean)
+    )
+    sub = res.scalar_one_or_none()
+    if not sub:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Application with this reference number was not found"
+        )
+
+    check_submission_access(sub, current_user)
+
+    await record_audit_event(
+        db,
+        action="view_by_reference",
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        target_type="submission",
+        target_id=str(sub.id),
+        details={"reference_number": ref_clean}
+    )
+
+    sub_title = await compute_submission_title(db, sub)
+    ver_fields = sub.version.fields if sub.version else []
+    ans_map = {a.field_id: a.value for a in sub.answers if a.value}
+    req_fields = [f for f in ver_fields if f.required]
+    all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
+    can_edit = (sub.status == "in_progress")
+    formatted_answers = _format_answers_for_response(sub.answers, ver_fields)
+
+    detail_resp = SubmissionDetailResponse(
+        id=sub.id,
+        form_id=sub.form_id,
+        form_version_id=sub.form_version_id,
+        version_number=sub.version.version_number if sub.version else 1,
+        user_id=sub.user_id,
+        user_email=sub.user.email if sub.user else "",
+        status=sub.status,
+        started_at=sub.started_at,
+        completed_at=sub.completed_at,
+        submitted_at=sub.submitted_at,
+        submission_title=sub_title,
+        submission_name=sub_title,
+        all_answered=all_ans,
+        can_edit=can_edit,
+        reference_number=sub.reference_number,
+        channel=sub.channel,
+        assisted_by=sub.assisted_by,
+        kiosk_id=sub.kiosk_id,
+        consent_at=sub.consent_at,
+        consent_noted_by=sub.consent_noted_by,
+        language_chosen=sub.language_chosen,
+        retention_expires_at=sub.retention_expires_at,
+        print_count=sub.print_count or 0,
+        answers=formatted_answers,
+        fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
+    )
+
+    can_reprint = True
+    if current_user.role == "kiosk" and (sub.print_count or 0) >= 2:
+        can_reprint = False
+
+    return ReferenceLookupResponse(
+        submission=detail_resp,
+        form_title=sub.form.title if sub.form else "Citizen Application",
+        office_name=settings.OFFICE_NAME,
+        can_reprint=can_reprint
+    )
 
 @router.get("/submissions/{submission_id}", response_model=SubmissionDetailResponse)
 async def get_user_submission(
@@ -143,10 +323,21 @@ async def get_user_submission(
         .where(Submission.id == submission_id)
     )
     sub = res.scalar_one_or_none()
-    
-    # CRITICAL: Return 404 (not 403) for other users' submissions!
-    if not sub or (sub.user_id != current_user.id and current_user.role != "admin"):
+    if not sub:
         raise HTTPException(status_code=404, detail="Submission not found")
+
+    check_submission_access(sub, current_user)
+
+    if current_user.role in ("admin", "operator"):
+        await record_audit_event(
+            db,
+            action="view_submission",
+            actor_id=current_user.id,
+            actor_role=current_user.role,
+            target_type="submission",
+            target_id=str(sub.id),
+            details={"reference_number": sub.reference_number}
+        )
 
     sub_title = await compute_submission_title(db, sub)
     ver_fields = sub.version.fields if sub.version else []
@@ -154,6 +345,8 @@ async def get_user_submission(
     req_fields = [f for f in ver_fields if f.required]
     all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
     can_edit = (sub.status == "in_progress")
+
+    formatted_answers = _format_answers_for_response(sub.answers, ver_fields)
 
     return SubmissionDetailResponse(
         id=sub.id,
@@ -170,7 +363,16 @@ async def get_user_submission(
         submission_name=sub_title,
         all_answered=all_ans,
         can_edit=can_edit,
-        answers=[SubmissionAnswerResponse.model_validate(a) for a in sub.answers],
+        reference_number=sub.reference_number,
+        channel=sub.channel,
+        assisted_by=sub.assisted_by,
+        kiosk_id=sub.kiosk_id,
+        consent_at=sub.consent_at,
+        consent_noted_by=sub.consent_noted_by,
+        language_chosen=sub.language_chosen,
+        retention_expires_at=sub.retention_expires_at,
+        print_count=sub.print_count or 0,
+        answers=formatted_answers,
         fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
     )
 
@@ -182,10 +384,10 @@ async def delete_user_submission(
 ):
     res = await db.execute(select(Submission).where(Submission.id == submission_id))
     sub = res.scalar_one_or_none()
-
-    # CRITICAL: Return 404 (not 403) for other users' submissions!
-    if not sub or (sub.user_id != current_user.id and current_user.role != "admin"):
+    if not sub:
         raise HTTPException(status_code=404, detail="Submission not found")
+
+    check_submission_access(sub, current_user)
 
     if sub.status in ["submitted", "completed"] and current_user.role != "admin":
         raise HTTPException(
@@ -193,8 +395,19 @@ async def delete_user_submission(
             detail="Submitted forms cannot be deleted"
         )
 
+    ref_num = sub.reference_number
     await db.delete(sub)
     await db.commit()
+
+    await record_audit_event(
+        db,
+        action="delete_submission",
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        target_type="submission",
+        target_id=str(submission_id),
+        details={"reference_number": ref_num}
+    )
     return None
 
 @router.post("/submissions/{submission_id}/submit", response_model=SubmissionDetailResponse)
@@ -216,18 +429,33 @@ async def complete_submission(
         .where(Submission.id == submission_id)
     )
     sub = res.scalar_one_or_none()
-    if not sub or (sub.user_id != current_user.id and current_user.role != "admin"):
+    if not sub:
         raise HTTPException(status_code=404, detail="Submission not found")
+
+    check_submission_access(sub, current_user)
+
+    ver_fields = sub.version.fields if sub.version else []
+    field_by_id = {f.id: f for f in ver_fields}
 
     # Upsert answers if provided
     if answers_in:
         existing_answers = {a.field_id: a for a in sub.answers}
         for ans in answers_in:
+            target_field = field_by_id.get(ans.field_id)
+            is_sens = getattr(target_field, "is_sensitive_number", False) if target_field else False
+
+            # Encrypt sensitive number fields at rest
+            final_val = ans.value
+            final_raw = ans.raw_transcript
+            if is_sens and final_val:
+                final_val = encrypt_field_value(final_val)
+                final_raw = None # Never log or retain transcript of sensitive numbers
+
             if ans.field_id in existing_answers:
                 existing_ans = existing_answers[ans.field_id]
-                existing_ans.value = ans.value
-                if ans.raw_transcript is not None:
-                    existing_ans.raw_transcript = ans.raw_transcript
+                existing_ans.value = final_val
+                if final_raw is not None:
+                    existing_ans.raw_transcript = final_raw
                 if ans.language is not None:
                     existing_ans.language = ans.language
                 existing_ans.updated_at = datetime.utcnow()
@@ -235,8 +463,8 @@ async def complete_submission(
                 new_ans = SubmissionAnswer(
                     submission_id=sub.id,
                     field_id=ans.field_id,
-                    value=ans.value,
-                    raw_transcript=ans.raw_transcript,
+                    value=final_val,
+                    raw_transcript=final_raw,
                     language=ans.language,
                     updated_at=datetime.utcnow()
                 )
@@ -245,7 +473,6 @@ async def complete_submission(
         await db.refresh(sub)
 
     # Validate submit: check missing required fields
-    ver_fields = sub.version.fields if sub.version else []
     answers_map = {a.field_id: a.value for a in sub.answers if a.value}
     missing_fields = [
         f.field_name.replace("_", " ") for f in ver_fields
@@ -263,7 +490,30 @@ async def complete_submission(
         now = datetime.utcnow()
         sub.submitted_at = now
         sub.completed_at = now
+
+        # Generate unique Crockford Base32 reference number
+        if not sub.reference_number:
+            sub.reference_number = generate_reference_number("CS")
+
+        # Set retention expiration date
+        if not sub.retention_expires_at:
+            sub.retention_expires_at = now + timedelta(days=settings.RETENTION_DAYS)
+
         await db.commit()
+
+        await record_audit_event(
+            db,
+            action="submit_application",
+            actor_id=current_user.id,
+            actor_role=current_user.role,
+            target_type="submission",
+            target_id=str(sub.id),
+            details={
+                "reference_number": sub.reference_number,
+                "channel": sub.channel,
+                "retention_expires_at": sub.retention_expires_at.isoformat()
+            }
+        )
 
     # Re-query
     res = await db.execute(
@@ -283,6 +533,7 @@ async def complete_submission(
     req_fields = [f for f in ver_fields if f.required]
     all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
     can_edit = (updated_sub.status == "in_progress")
+    formatted_answers = _format_answers_for_response(updated_sub.answers, ver_fields)
 
     return SubmissionDetailResponse(
         id=updated_sub.id,
@@ -299,6 +550,144 @@ async def complete_submission(
         submission_name=sub_title,
         all_answered=all_ans,
         can_edit=can_edit,
-        answers=[SubmissionAnswerResponse.model_validate(a) for a in updated_sub.answers],
+        reference_number=updated_sub.reference_number,
+        channel=updated_sub.channel,
+        assisted_by=updated_sub.assisted_by,
+        kiosk_id=updated_sub.kiosk_id,
+        consent_at=updated_sub.consent_at,
+        consent_noted_by=updated_sub.consent_noted_by,
+        language_chosen=updated_sub.language_chosen,
+        retention_expires_at=updated_sub.retention_expires_at,
+        print_count=updated_sub.print_count or 0,
+        answers=formatted_answers,
         fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
+    )
+
+@router.post("/submissions/{submission_id}/print")
+async def record_submission_print(
+    submission_id: int,
+    print_type: str = Query("slip", description="'slip' or 'a4'"),
+    current_user: User = Depends(require_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Logs and increments print count for receipt slips or A4 applications.
+    Kiosks are restricted to 2 prints (slip + A4) per completed session.
+    """
+    res = await db.execute(
+        select(Submission)
+        .options(selectinload(Submission.form))
+        .where(Submission.id == submission_id)
+    )
+    sub = res.scalar_one_or_none()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    check_submission_access(sub, current_user)
+
+    if current_user.role == "kiosk" and (sub.print_count or 0) >= 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kiosk print limit reached for this session."
+        )
+
+    sub.print_count = (sub.print_count or 0) + 1
+    await db.commit()
+
+    await record_audit_event(
+        db,
+        action="print_application",
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        target_type="submission",
+        target_id=str(sub.id),
+        details={
+            "print_type": print_type,
+            "print_count": sub.print_count,
+            "reference_number": sub.reference_number
+        }
+    )
+
+    return {
+        "status": "ok",
+        "print_count": sub.print_count,
+        "reference_number": sub.reference_number,
+        "can_reprint": (current_user.role in ("admin", "operator") or (sub.print_count < 2))
+    }
+
+@router.get("/submissions/{submission_id}/pdf")
+async def generate_submission_pdf(
+    submission_id: int,
+    copy_type: str = Query("slip", description="'slip' or 'a4'"),
+    current_user: User = Depends(require_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Optional server-side PDF export via Playwright Chromium.
+    Feature-flagged by settings.ENABLE_PDF_EXPORT.
+    """
+    if not settings.ENABLE_PDF_EXPORT:
+        raise HTTPException(status_code=501, detail="Server-side PDF export is disabled.")
+
+    res = await db.execute(
+        select(Submission)
+        .options(
+            selectinload(Submission.form),
+            selectinload(Submission.version).selectinload(FormVersion.fields),
+            selectinload(Submission.answers)
+        )
+        .where(Submission.id == submission_id)
+    )
+    sub = res.scalar_one_or_none()
+    if not sub:
+        raise HTTPException(status_code=404, detail="Submission not found")
+
+    check_submission_access(sub, current_user)
+
+    # Simple printable HTML for Playwright or direct PDF delivery
+    title = sub.form.title if sub.form else "Citizen Application"
+    ref = sub.reference_number or f"REF-{sub.id}"
+    disclaimer = "This is an application helper and not an official government portal."
+    
+    html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body {{ font-family: sans-serif; padding: 20px; }}
+  .box {{ border: 2px solid #5B2A86; padding: 15px; border-radius: 8px; max-width: 600px; }}
+  .ref-cells {{ display: flex; gap: 4px; margin: 10px 0; }}
+  .cell {{ border: 1.5px solid #23272F; width: 28px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-family: monospace; font-size: 18px; }}
+  .disclaimer {{ font-size: 11px; color: #666; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 8px; }}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2>{settings.OFFICE_NAME}</h2>
+  <h3>{title}</h3>
+  <p>Reference Number:</p>
+  <div class="ref-cells">
+    {''.join([f'<span class="cell">{c}</span>' for c in ref])}
+  </div>
+  <p>Date: {sub.submitted_at.strftime('%Y-%m-%d %H:%M') if sub.submitted_at else 'In Progress'}</p>
+  <div class="disclaimer">{disclaimer}</div>
+</div>
+</body>
+</html>"""
+
+    # Record print/export audit event
+    await record_audit_event(
+        db,
+        action="pdf_export",
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        target_type="submission",
+        target_id=str(sub.id),
+        details={"copy_type": copy_type, "reference_number": ref}
+    )
+
+    return Response(
+        content=html_content,
+        media_type="text/html",
+        headers={"Content-Disposition": f"inline; filename={ref}.html"}
     )

@@ -18,6 +18,8 @@ from app.deps import require_admin
 from app.services.questions import generate_field_questions
 from app.services.extraction import extract_answer
 from app.services.submission_title import compute_submission_titles_batch
+from app.services.audit import record_audit_event
+from app.services.crypto import decrypt_field_value, mask_field_value
 
 router = APIRouter(prefix="/admin/forms", tags=["admin-forms"])
 
@@ -75,7 +77,8 @@ async def create_form(
             position=field_data.position if field_data.position is not None else idx,
             choices=field_data.choices,
             question_en=field_data.question_en,
-            question_ta=field_data.question_ta
+            question_ta=field_data.question_ta,
+            is_sensitive_number=getattr(field_data, 'is_sensitive_number', False)
         )
         db.add(field)
 
@@ -228,7 +231,8 @@ async def update_form(
                 position=field_data.position if field_data.position is not None else idx,
                 choices=field_data.choices,
                 question_en=field_data.question_en,
-                question_ta=field_data.question_ta
+                question_ta=field_data.question_ta,
+                is_sensitive_number=getattr(field_data, 'is_sensitive_number', False)
             )
             db.add(field)
 
@@ -459,6 +463,7 @@ async def get_admin_form_submissions(
 async def export_submissions_csv(
     form_id: int,
     version_id: Optional[int] = Query(None),
+    include_sensitive: bool = Query(False, description="Explicitly include decrypted sensitive number fields (Admin only, audited)"),
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
@@ -488,7 +493,7 @@ async def export_submissions_csv(
     writer = csv.writer(output)
 
     writer.writerow([
-        "Submission Title", "Submission ID", "User Email", "Version Number", "Status",
+        "Submission Title", "Submission ID", "Reference Number", "User Email", "Version Number", "Status",
         "Started At", "Completed At", "Field Name", "Cleaned Value", "Answer Source", "Raw Transcript"
     ])
 
@@ -497,17 +502,34 @@ async def export_submissions_csv(
         answers_by_field = {a.field_id: a for a in s.answers}
         fields = s.version.fields if s.version else []
         sub_title = title_map.get(s.id, f"submission-{s.id}")
+        ref_num = s.reference_number or ""
         for f in fields:
+            # Sensitive number fields are excluded from CSV exports unless an admin explicitly includes them
+            if getattr(f, "is_sensitive_number", False) and not include_sensitive:
+                continue
+
             ans = answers_by_field.get(f.id)
             val = ans.value if ans else ""
+            if getattr(f, "is_sensitive_number", False) and val:
+                val = decrypt_field_value(val)
             src = ans.source if ans else ""
             raw = ans.raw_transcript if ans else ""
             writer.writerow([
-                sub_title, s.id, s.user.email if s.user else "", v_num, s.status,
+                sub_title, s.id, ref_num, s.user.email if s.user else "", v_num, s.status,
                 s.started_at.isoformat() if s.started_at else "",
                 s.completed_at.isoformat() if s.completed_at else "",
                 f.field_name, val, src, raw
             ])
+
+    await record_audit_event(
+        db,
+        action="export_csv",
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        target_type="form",
+        target_id=str(form_id),
+        details={"include_sensitive": include_sensitive, "submissions_count": len(submissions)}
+    )
 
     output.seek(0)
     filename = f"form_{form_id}_submissions.csv"

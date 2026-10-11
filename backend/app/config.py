@@ -3,6 +3,12 @@ from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    APP_NAME: str = "Citizen Desk"
+    OFFICE_NAME: str = "Citizen Service Centre"
+    SEED_SAMPLE_FORMS: bool = True
+    RETENTION_DAYS: int = 30
+    FERNET_KEY: str = ""
+    ENABLE_PDF_EXPORT: bool = True
     DATABASE_URL: str = "sqlite+aiosqlite:///./voiceform.db"
     JWT_SECRET: str = "supersecretkey_change_in_production_voiceform_123"
     JWT_EXPIRE_MINUTES: int = 1440

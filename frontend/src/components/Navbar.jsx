@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mic, LogOut, Shield, User as UserIcon, Volume2, VolumeX, Globe } from 'lucide-react';
+import { brandConfig, getRoleLabel } from '../brand';
+import { LogOut, Volume2, VolumeX } from 'lucide-react';
 
 export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpeechEnabled }) => {
   const { user, logout } = useAuth();
@@ -15,92 +16,108 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
 
   if (!user) return null;
 
+  const roleLabel = getRoleLabel(user.role);
+
   return (
-    <nav className="bg-[#0B3954] border-b border-[#051B28]/60 sticky top-0 z-40 shadow-lg">
+    <nav className="bg-[#F6F8F5] border-b border-[#DCE7E0] sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          {/* Brand */}
-          <div className="flex items-center space-x-8">
-            <Link to={user.role === 'admin' ? '/admin' : '/user'} className="flex items-center space-x-3 group">
-              <div className="w-12 h-12 neu-circle flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                <Mic className="w-6 h-6 text-[#BFD7EA]" />
-              </div>
-              <div>
-                <span className="text-xl font-extrabold text-[#FFFFFF] tracking-tight">
-                  VoiceForm
-                </span>
-                <span className="block text-[10px] font-mono text-[#BFD7EA] uppercase tracking-widest leading-none">
-                  Tamil & English
-                </span>
-              </div>
+        <div className="flex items-center justify-between h-16 sm:h-20">
+          {/* Brand Header */}
+          <div className="flex items-center space-x-6 sm:space-x-8">
+            <Link to={user.role === 'admin' ? '/admin' : '/user'} className="flex flex-col group">
+              <span className="text-xl font-bold font-serif text-[#2A2E2C] tracking-tight group-hover:text-[#1F3FBF] transition-colors">
+                {brandConfig.appName}
+              </span>
+              <span className="text-xs text-[#2A2E2C]/75 font-sans-ui leading-none">
+                {brandConfig.officeName}
+              </span>
             </Link>
 
             {/* Nav links */}
-            <div className="hidden md:flex items-center space-x-3">
-              {user.role === 'admin' ? (
+            <div className="hidden md:flex items-center space-x-2 font-sans-ui text-sm">
+              {user.role === 'admin' && (
                 <>
                   <Link
                     to="/admin"
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 font-medium rounded transition-colors ${
                       location.pathname === '/admin'
-                        ? 'neu-accent-button font-semibold'
-                        : 'neu-button text-[#BFD7EA] hover:text-[#FFFFFF]'
+                        ? 'bg-[#1F3FBF] text-[#F6F8F5]'
+                        : 'text-[#2A2E2C] hover:bg-[#DCE7E0]'
                     }`}
                   >
-                    Dashboard
+                    Forms
                   </Link>
                   <Link
                     to="/admin/builder/new"
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 font-medium rounded transition-colors ${
                       location.pathname.startsWith('/admin/builder')
-                        ? 'neu-accent-button font-semibold'
-                        : 'neu-button text-[#BFD7EA] hover:text-[#FFFFFF]'
+                        ? 'bg-[#1F3FBF] text-[#F6F8F5]'
+                        : 'text-[#2A2E2C] hover:bg-[#DCE7E0]'
                     }`}
                   >
                     Create Form
                   </Link>
                 </>
-              ) : (
-                <Link
-                  to="/user"
-                  className={`px-4 py-2 text-sm font-medium transition-all ${
-                    location.pathname === '/user'
-                      ? 'neu-accent-button font-semibold'
-                      : 'neu-button text-[#BFD7EA] hover:text-[#FFFFFF]'
-                  }`}
-                >
-                  Published Forms
-                </Link>
+              )}
+
+              {user.role !== 'admin' && (
+                <>
+                  <Link
+                    to="/user"
+                    className={`px-3 py-1.5 font-medium rounded transition-colors ${
+                      location.pathname === '/user'
+                        ? 'bg-[#1F3FBF] text-[#F6F8F5]'
+                        : 'text-[#2A2E2C] hover:bg-[#DCE7E0]'
+                    }`}
+                  >
+                    Forms
+                  </Link>
+                  <a
+                    href="#my-submissions"
+                    className="px-3 py-1.5 font-medium text-[#2A2E2C] hover:bg-[#DCE7E0] rounded transition-colors"
+                  >
+                    My Applications
+                  </a>
+                </>
               )}
             </div>
           </div>
 
           {/* Right Controls */}
-          <div className="flex items-center space-x-4">
-            {/* Language Selector */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            {/* Language Segmented Control */}
             {setUiLang && (
-              <div className="flex items-center neu-inset p-1 text-xs font-medium">
-                <Globe className="w-3.5 h-3.5 text-[#BFD7EA] ml-1.5 mr-1" />
+              <div className="flex items-center bg-[#DCE7E0] p-0.5 rounded text-xs font-sans-ui">
                 <button
+                  type="button"
                   onClick={() => setUiLang('en')}
-                  className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                    uiLang === 'en' ? 'neu-accent-button font-semibold' : 'text-[#BFD7EA] hover:text-[#FFFFFF]'
+                  className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                    uiLang === 'en'
+                      ? 'bg-[#1F3FBF] text-[#F6F8F5] font-semibold'
+                      : 'text-[#2A2E2C] hover:text-[#1F3FBF]'
                   }`}
                 >
-                  EN
+                  English
                 </button>
                 <button
+                  type="button"
                   onClick={() => setUiLang('ta')}
-                  className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                    uiLang === 'ta' ? 'neu-accent-button font-semibold' : 'text-[#BFD7EA] hover:text-[#FFFFFF]'
+                  lang="ta"
+                  className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                    uiLang === 'ta'
+                      ? 'bg-[#1F3FBF] text-[#F6F8F5] font-semibold'
+                      : 'text-[#2A2E2C] hover:text-[#1F3FBF]'
                   }`}
                 >
                   தமிழ்
                 </button>
                 <button
+                  type="button"
                   onClick={() => setUiLang('auto')}
-                  className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
-                    uiLang === 'auto' ? 'neu-accent-button font-semibold' : 'text-[#BFD7EA] hover:text-[#FFFFFF]'
+                  className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                    uiLang === 'auto'
+                      ? 'bg-[#1F3FBF] text-[#F6F8F5] font-semibold'
+                      : 'text-[#2A2E2C] hover:text-[#1F3FBF]'
                   }`}
                 >
                   Auto
@@ -108,32 +125,38 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
               </div>
             )}
 
-            {/* Speech Toggle */}
+            {/* Speech Toggle Labelled Switch */}
             {setSpeechEnabled && (
-              <button
-                onClick={() => setSpeechEnabled(!speechEnabled)}
-                title={speechEnabled ? "Voice Output: Enabled" : "Voice Output: Disabled"}
-                className={`p-2.5 neu-button cursor-pointer ${
-                  speechEnabled ? 'text-[#BFD7EA]' : 'text-[#BFD7EA]/40'
-                }`}
-              >
-                {speechEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              </button>
+              <label className="hidden sm:flex items-center space-x-2 text-xs text-[#2A2E2C]/75 cursor-pointer font-sans-ui select-none">
+                <input
+                  type="checkbox"
+                  checked={speechEnabled}
+                  onChange={(e) => setSpeechEnabled(e.target.checked)}
+                  className="rounded border-[#DCE7E0] text-[#1F3FBF] focus:ring-[#1F3FBF]"
+                />
+                <span className="flex items-center space-x-1">
+                  {speechEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#1F3FBF]" /> : <VolumeX className="w-3.5 h-3.5 text-[#2A2E2C]/60" />}
+                  <span>Read questions aloud</span>
+                </span>
+              </label>
             )}
 
-            {/* User Profile info */}
-            <div className="flex items-center space-x-3 pl-3 border-l border-[#051B28]/50">
-              <span className="inline-flex items-center px-3 py-1 neu-pill text-xs font-semibold text-[#BFD7EA]">
-                {user.role === 'admin' ? <Shield className="w-3 h-3 mr-1 text-[#087E8B]" /> : <UserIcon className="w-3 h-3 mr-1 text-[#087E8B]" />}
-                {user.role}
-              </span>
-              <span className="hidden sm:inline text-xs text-[#BFD7EA] truncate max-w-[140px]">
-                {user.username || user.email}
-              </span>
+            {/* Account Menu */}
+            <div className="flex items-center space-x-2 pl-2 border-l border-[#DCE7E0] font-sans-ui">
+              <div className="flex flex-col text-right">
+                <span className="text-xs font-semibold text-[#2A2E2C] truncate max-w-[120px] sm:max-w-[160px]">
+                  {user.email || user.username}
+                </span>
+                <span className="text-[11px] text-[#2A2E2C]/75">
+                  {roleLabel}
+                </span>
+              </div>
               <button
+                type="button"
                 onClick={handleLogout}
-                title="Logout"
-                className="p-2.5 neu-button text-[#BFD7EA] hover:text-[#FF5A5F] cursor-pointer"
+                title="Log out"
+                aria-label="Log out"
+                className="p-2 text-[#2A2E2C]/75 hover:text-[#B3261E] rounded focus:outline-none focus:ring-2 focus:ring-[#1F3FBF] transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>

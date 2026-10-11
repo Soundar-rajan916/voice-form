@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { adminFormsApi } from '../api/client';
 import { Navbar } from '../components/Navbar';
+import { brandConfig } from '../brand';
 import {
   Plus, FileText, CheckCircle2, Archive, Edit3, Eye, Loader2, RefreshCw, AlertCircle, Trash2
 } from 'lucide-react';
@@ -57,7 +58,7 @@ export const AdminDashboard = () => {
   };
 
   const handleDeleteForm = async (formId, formTitle) => {
-    if (!window.confirm(`⚠️ PERMANENT DELETE WARNING:\nAre you sure you want to permanently delete "${formTitle}"?\n\nThis will delete the form, all versions, fields, and ALL user submissions permanently.`)) return;
+    if (!window.confirm(`Permanent delete warning:\nAre you sure you want to permanently delete "${formTitle}"?\n\nThis will remove the form, all versions, fields, and submissions.`)) return;
     setActionLoading(formId);
     try {
       await adminFormsApi.delete(formId);
@@ -70,62 +71,66 @@ export const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B3954] text-[#FFFFFF] flex flex-col">
+    <div className="min-h-screen bg-[#DCE7E0] text-[#2A2E2C] flex flex-col font-sans-ui">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#FFFFFF] tracking-tight">
-              Admin Form Management
+            <span className="text-xs font-semibold uppercase tracking-widest text-[#2A2E2C]/75 block mb-1">
+              Hospital staff management
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-[#2A2E2C]">
+              Forms
             </h1>
-            <p className="text-sm text-[#BFD7EA] mt-1">
-              Create, edit, publish versions, and view user voice submissions.
+            <p className="text-sm text-[#2A2E2C]/75 mt-1">
+              Create, edit, publish versions, and view patient intake responses.
             </p>
           </div>
 
           <div className="flex items-center space-x-3">
             <button
+              type="button"
               onClick={loadForms}
-              className="p-2.5 neu-button text-[#BFD7EA] hover:text-[#FFFFFF] transition-colors cursor-pointer"
+              className="p-2.5 bg-[#F6F8F5] border border-[#DCE7E0] text-[#2A2E2C] hover:bg-[#DCE7E0] rounded transition-colors cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
               title="Refresh forms"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
             <Link
               to="/admin/builder/new"
-              className="px-4 py-2.5 neu-accent-button font-semibold text-sm flex items-center space-x-2"
+              className="px-4 py-2.5 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F6F8F5] font-semibold text-sm rounded transition-colors flex items-center space-x-2 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
             >
               <Plus className="w-4 h-4" />
-              <span>Create New Form</span>
+              <span>Create Form</span>
             </Link>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 neu-inset text-[#FF5A5F] text-xs flex items-center space-x-3 border-l-4 border-[#C81D25]">
-            <AlertCircle className="w-4 h-4 text-[#FF5A5F]" />
+          <div className="mb-6 p-4 bg-[#F6F8F5] border-l-4 border-[#B3261E] text-[#B3261E] text-xs flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Loading State */}
+        {/* Forms Grid */}
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-[#BFD7EA]">
-            <Loader2 className="w-8 h-8 animate-spin text-[#087E8B] mb-4" />
-            <p className="text-sm">Loading admin forms...</p>
+          <div className="py-20 flex flex-col items-center justify-center text-[#2A2E2C]/75 bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF] mb-4" />
+            <p className="text-sm">Loading intake forms...</p>
           </div>
         ) : forms.length === 0 ? (
-          <div className="py-16 text-center neu-inset p-8">
-            <FileText className="w-12 h-12 text-[#BFD7EA]/50 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-[#FFFFFF] mb-1">No forms created yet</h3>
-            <p className="text-xs text-[#BFD7EA] max-w-sm mx-auto mb-6">
-              Get started by creating your first voice form with customizable fields and Tamil/English questions.
+          <div className="py-16 text-center bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg p-8 sheet-shadow">
+            <FileText className="w-12 h-12 text-[#2A2E2C]/40 mx-auto mb-4" />
+            <h3 className="text-lg font-bold font-serif text-[#2A2E2C] mb-1">No forms created yet</h3>
+            <p className="text-xs text-[#2A2E2C]/75 max-w-sm mx-auto mb-6">
+              Get started by creating your first patient intake form with Tamil and English questions.
             </p>
             <Link
               to="/admin/builder/new"
-              className="inline-flex items-center space-x-2 px-4 py-2.5 neu-accent-button text-sm font-medium"
+              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-[#1F3FBF] text-[#F6F8F5] text-sm font-semibold rounded"
             >
               <Plus className="w-4 h-4" />
               <span>Create Form</span>
@@ -137,31 +142,45 @@ export const AdminDashboard = () => {
               const isPublished = form.status === 'published';
               const isArchived = form.status === 'archived';
 
+              const isSampleTemplate =
+                ['Income certificate request', 'Scholarship application', 'Old age pension application'].includes(form.title) ||
+                (form.description || '').toLowerCase().includes('sample template');
+
               return (
                 <div
                   key={form.id}
-                  className="neu-flat p-6 transition-all flex flex-col justify-between hover:scale-[1.01]"
+                  className="bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg p-6 flex flex-col justify-between sheet-shadow"
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-2 mb-3">
-                      <h3 className="font-bold text-lg text-[#FFFFFF] line-clamp-1">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-serif font-bold text-lg text-[#2A2E2C] line-clamp-1">
                         {form.title}
                       </h3>
-                      <span className="px-2.5 py-0.5 neu-pill text-xs font-semibold uppercase tracking-wider text-[#BFD7EA]">
+                      <span className={`px-2.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider ${
+                        isPublished ? 'bg-[#1F3FBF]/10 text-[#1F3FBF]' : 'bg-[#DCE7E0] text-[#2A2E2C]'
+                      }`}>
                         {form.status}
                       </span>
                     </div>
 
-                    <p className="text-xs text-[#BFD7EA] line-clamp-2 mb-4 h-8">
-                      {form.description || 'No description provided.'}
+                    {isSampleTemplate && (
+                      <div className="mb-3">
+                        <span className="inline-block px-2.5 py-0.5 bg-[#FFE45C] text-[#23272F] text-[11px] font-medium rounded border border-[#23272F]/20">
+                          Sample template, adapt to the department's real form
+                        </span>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-[#2A2E2C]/75 line-clamp-2 mb-4 h-8">
+                      {form.description || 'Citizen service application form.'}
                     </p>
 
-                    <div className="flex items-center space-x-4 text-xs font-mono text-[#BFD7EA] border-t border-b border-[#051B28]/50 py-2.5 mb-6">
+                    <div className="flex items-center space-x-4 text-xs font-sans-ui text-[#2A2E2C]/75 border-t border-b border-[#DCE7E0] py-2.5 mb-6">
                       <div>
-                        Version: <span className="text-[#FFFFFF] font-bold">v{form.latest_version_number}</span>
+                        Version: <span className="text-[#2A2E2C] font-semibold">v{form.latest_version_number}</span>
                       </div>
                       <div>
-                        Fields: <span className="text-[#BFD7EA] font-bold">{form.field_count}</span>
+                        Fields: <span className="text-[#2A2E2C] font-semibold">{form.field_count}</span>
                       </div>
                     </div>
                   </div>
@@ -170,8 +189,7 @@ export const AdminDashboard = () => {
                     <div className="flex items-center space-x-2">
                       <Link
                         to={`/admin/builder/${form.id}`}
-                        className="p-2 neu-button text-[#BFD7EA] hover:text-[#FFFFFF] text-xs font-medium transition-colors flex items-center space-x-1"
-                        title="Edit Form"
+                        className="px-2.5 py-1.5 border border-[#DCE7E0] hover:bg-[#DCE7E0]/50 text-[#2A2E2C] text-xs font-semibold rounded flex items-center space-x-1"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Edit</span>
@@ -179,20 +197,20 @@ export const AdminDashboard = () => {
 
                       <Link
                         to={`/admin/forms/${form.id}/submissions`}
-                        className="p-2 neu-button text-[#BFD7EA] hover:text-[#FFFFFF] text-xs font-medium transition-colors flex items-center space-x-1"
-                        title="View Submissions"
+                        className="px-2.5 py-1.5 border border-[#DCE7E0] hover:bg-[#DCE7E0]/50 text-[#2A2E2C] text-xs font-semibold rounded flex items-center space-x-1"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                        <span>Submissions</span>
+                        <span>Responses</span>
                       </Link>
                     </div>
 
                     <div className="flex items-center space-x-1">
                       {!isPublished && !isArchived && (
                         <button
+                          type="button"
                           onClick={() => handlePublish(form.id)}
                           disabled={actionLoading === form.id}
-                          className="px-3 py-1.5 neu-accent-button text-xs font-medium transition-colors flex items-center space-x-1 disabled:opacity-50 cursor-pointer"
+                          className="px-3 py-1.5 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F6F8F5] text-xs font-semibold rounded transition-colors flex items-center space-x-1 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Publish</span>
@@ -201,22 +219,24 @@ export const AdminDashboard = () => {
 
                       {!isArchived && (
                         <button
+                          type="button"
                           onClick={() => handleArchive(form.id)}
                           disabled={actionLoading === form.id}
-                          className="p-2 neu-button text-[#BFD7EA]/60 hover:text-amber-400 transition-colors cursor-pointer"
-                          title="Archive Form"
+                          className="p-1.5 text-[#2A2E2C]/60 hover:text-[#2A2E2C] rounded transition-colors cursor-pointer"
+                          title="Archive form"
                         >
                           <Archive className="w-4 h-4" />
                         </button>
                       )}
 
                       <button
+                        type="button"
                         onClick={() => handleDeleteForm(form.id, form.title)}
                         disabled={actionLoading === form.id}
-                        className="p-2 neu-button text-[#FF5A5F]/70 hover:text-[#FF5A5F] hover:bg-red-950/40 transition-colors cursor-pointer"
-                        title="Delete Form Permanently"
+                        className="p-1.5 text-[#2A2E2C]/60 hover:text-[#B3261E] rounded transition-colors cursor-pointer"
+                        title="Delete form"
                       >
-                        <Trash2 className="w-4 h-4 text-[#FF5A5F]" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

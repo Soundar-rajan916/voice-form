@@ -1,146 +1,237 @@
+/* 1. Display & Heading Font: Catamaran */
+@import "@fontsource/catamaran/400.css";
+@import "@fontsource/catamaran/500.css";
+@import "@fontsource/catamaran/600.css";
+@import "@fontsource/catamaran/700.css";
+@import "@fontsource/catamaran/800.css";
+
+/* 2. Subheading & Accent Font: Cormorant Infant */
+@import "@fontsource/cormorant-infant/400.css";
+@import "@fontsource/cormorant-infant/400-italic.css";
+@import "@fontsource/cormorant-infant/600.css";
+@import "@fontsource/cormorant-infant/600-italic.css";
+@import "@fontsource/cormorant-infant/700.css";
+@import "@fontsource/cormorant-infant/700-italic.css";
+
+/* 3. Body & UI Font: Hind Siliguri */
+@import "@fontsource/hind-siliguri/400.css";
+@import "@fontsource/hind-siliguri/500.css";
+@import "@fontsource/hind-siliguri/600.css";
+@import "@fontsource/hind-siliguri/700.css";
+
+/* Tamil Script Fallback */
+@import "@fontsource/noto-serif-tamil/400.css";
+@import "@fontsource/noto-serif-tamil/600.css";
+@import "@fontsource/noto-serif-tamil/700.css";
+
 @import "tailwindcss";
 
-:root {
-  --deep-space-blue: #0b3954;
-  --teal: #087e8b;
-  --pale-sky: #bfd7ea;
-  --vibrant-coral: #ff5a5f;
-  --flag-red: #c81d25;
-  --white: #ffffff;
-}
-
 @layer base {
+  :root {
+    /* Font Family Stacks */
+    --font-heading: 'Catamaran', 'Noto Serif Tamil', sans-serif;
+    --font-subheading: 'Cormorant Infant', 'Noto Serif Tamil', serif;
+    --font-body: 'Hind Siliguri', sans-serif;
+
+    /* Citizen Desk Palette - Counter at a service office */
+    --color-sheet: #FCFCFA;          /* Form white */
+    --color-counter: #E3E7EC;        /* Counter background & ruled lines */
+    --color-charcoal: #23272F;       /* Printed text (Contrast > 7:1) */
+    --color-pen-blue: #1F3FBF;       /* Answers in pen blue */
+    --color-stamp-violet: #5B2A86;   /* Stamp violet (primary actions & rubber stamp) */
+    --color-highlighter: #FFE45C;    /* Active row highlighter */
+    --color-error: #B3261E;          /* Functional error */
+
+    font-family: var(--font-body);
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--color-charcoal);
+    background-color: var(--color-counter);
+  }
+
   body {
-    background-color: #0b3954;
-    color: #ffffff;
-    font-family: 'Inter', 'Noto Sans Tamil', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100dvh;
+    font-family: var(--font-body);
+    background-color: var(--color-counter);
+    color: var(--color-charcoal);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+  }
+
+  /* Tamil enlarged about 6% with line-height at least 1.6 */
+  [lang="ta"], .tamil-text {
+    font-size: 1.06em;
+    line-height: 1.65;
   }
 }
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Kiosk Base Typography (>=22px) */
+.kiosk-mode {
+  font-size: 22px;
+  line-height: 1.55;
+  font-family: var(--font-body);
 }
 
-::-webkit-scrollbar-track {
-  background: #0b3954;
+.kiosk-mode [lang="ta"], .kiosk-mode .tamil-text {
+  font-size: 1.08em;
+  line-height: 1.7;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #087e8b;
-  border-radius: 9999px;
+/* Font Pairing Utility Classes */
+.font-heading,
+.font-catamaran,
+.font-serif-printed {
+  font-family: var(--font-heading) !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #bfd7ea;
+.font-subheading,
+.font-cormorant,
+.font-editorial {
+  font-family: var(--font-subheading) !important;
 }
 
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(8, 126, 139, 0.7);
-  }
-
-  70% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 14px rgba(8, 126, 139, 0);
-  }
-
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(8, 126, 139, 0);
-  }
+.font-body,
+.font-hind,
+.font-sans-counter {
+  font-family: var(--font-body) !important;
 }
 
-.animate-pulse-ring {
-  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* The Paper Sheet - Ruled rows, paper white */
+.paper-sheet {
+  background-color: var(--color-sheet);
+  border: 1px solid var(--color-counter);
+  border-radius: 4px;
 }
 
-/* Neumorphism (Soft UI) Classes - Calibrated for Deep Space Blue (#0b3954) */
-.neu-flat {
-  background: #0b3954;
-  box-shadow: 8px 8px 18px #051b28, -8px -8px 18px #115780;
-  border-radius: 1.5rem;
+/* Ruled paper line */
+.ruled-row {
+  border-bottom: 1px solid var(--color-counter);
 }
 
-.neu-inset {
-  background: #0b3954;
-  box-shadow: inset 4px 4px 8px #051b28, inset -4px -4px 8px #115780;
-  border-radius: 0.75rem;
+/* Answers in pen blue */
+.pen-blue-text {
+  color: var(--color-pen-blue);
+  font-weight: 600;
 }
 
-.neu-button {
-  background: #0b3954;
-  box-shadow: 5px 5px 10px #051b28, -5px -5px 10px #115780;
-  transition: all 0.2s ease;
-  border-radius: 0.75rem;
+/* Active Row Highlighter */
+.active-highlighter-row {
+  background-color: var(--color-highlighter) !important;
+  transition: background-color 200ms ease-in-out;
 }
 
-.neu-button:hover {
-  box-shadow: 7px 7px 14px #051b28, -7px -7px 14px #115780;
+/* Rubber "Received" stamp in Stamp Violet #5B2A86 */
+.stamp-received {
+  border: 3.5px solid var(--color-stamp-violet);
+  color: var(--color-stamp-violet);
+  font-family: 'Hind Madurai', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transform: rotate(-5deg);
+  border-radius: 6px;
+  background-color: rgba(252, 252, 250, 0.95);
+  display: inline-block;
+  padding: 8px 16px;
+  box-shadow: 0 0 0 1px var(--color-stamp-violet);
 }
 
-.neu-button-pressed,
-.neu-button:active {
-  background: #0b3954;
-  box-shadow: inset 3px 3px 6px #051b28, inset -3px -3px 6px #115780;
+/* Boxed Character Cells (one character per box) - deliberate nod to paper forms */
+.boxed-cells {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.neu-accent-button {
-  background: linear-gradient(145deg, #087e8b, #066570);
-  box-shadow: 5px 5px 12px #051b28, -5px -5px 12px #115780;
-  transition: all 0.2s ease;
-  color: #ffffff;
-  border-radius: 0.75rem;
-}
-
-.neu-accent-button:hover {
-  box-shadow: 7px 7px 15px #051b28, -7px -7px 15px #115780;
-  background: linear-gradient(145deg, #0a91a1, #087e8b);
-}
-
-.neu-accent-button:active {
-  box-shadow: inset 3px 3px 6px #044850, inset -3px -3px 6px #0cb4c6;
-}
-
-.neu-coral-button {
-  background: linear-gradient(145deg, #ff5a5f, #e04a4f);
-  box-shadow: 5px 5px 12px #051b28, -5px -5px 12px #115780;
-  transition: all 0.2s ease;
-  color: #ffffff;
-  border-radius: 0.75rem;
-}
-
-.neu-coral-button:hover {
-  box-shadow: 7px 7px 15px #051b28, -7px -7px 15px #115780;
-  background: linear-gradient(145deg, #ff7074, #ff5a5f);
-}
-
-.neu-coral-button:active {
-  box-shadow: inset 3px 3px 6px #aa3538, inset -3px -3px 6px #ff8084;
-}
-
-.neu-pill {
-  background: #0b3954;
-  box-shadow: 4px 4px 8px #051b28, -4px -4px 8px #115780;
-  border-radius: 9999px;
-}
-
-.neu-circle {
-  background: #0b3954;
-  box-shadow: 6px 6px 12px #051b28, -6px -6px 12px #115780;
-  border-radius: 9999px;
-  display: flex;
+.boxed-char {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 40px;
+  border: 1.5px solid var(--color-charcoal);
+  background-color: var(--color-sheet);
+  font-family: monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-charcoal);
+  border-radius: 2px;
 }
 
-.neu-circle-pressed {
-  background: #0b3954;
-  box-shadow: inset 4px 4px 8px #051b28, inset -4px -4px 8px #115780;
-  border-radius: 9999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.kiosk-boxed-char {
+  width: 40px;
+  height: 50px;
+  font-size: 24px;
+  border: 2px solid var(--color-charcoal);
+}
+
+/* Touch Target Minimum (>= 64px for kiosk buttons) */
+.touch-target-64 {
+  min-height: 64px;
+  min-width: 64px;
+}
+
+/* Focus Rings in Stamp Violet */
+*:focus-visible {
+  outline: 3px solid var(--color-stamp-violet);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp-received,
+  .active-highlighter-row,
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Print CSS */
+@media print {
+  body {
+    background: none !important;
+    color: #000 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* 80mm thermal receipt slip */
+  .receipt-slip-80mm {
+    width: 78mm !important;
+    max-width: 78mm !important;
+    margin: 0 auto !important;
+    padding: 6mm !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    border: none !important;
+  }
+
+  .receipt-slip-80mm .boxed-char {
+    width: 20px !important;
+    height: 24px !important;
+    font-size: 13px !important;
+    border-width: 1px !important;
+  }
+
+  /* Full A4 Application copy */
+  .application-a4-copy {
+    width: 100% !important;
+    max-width: 190mm !important;
+    margin: 0 auto !important;
+    padding: 15mm !important;
+    font-size: 15px !important;
+    border: none !important;
+  }
 }
