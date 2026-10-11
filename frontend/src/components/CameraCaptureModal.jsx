@@ -193,9 +193,9 @@ export default function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured, m
 
   return (
     <div className="fixed inset-0 z-50 bg-[#23272F]/80 flex items-center justify-center p-3 select-none backdrop-blur-sm">
-      <div className="bg-[#FCFCFA] border-2 border-[#23272F] rounded-lg max-w-2xl w-full flex flex-col overflow-hidden shadow-2xl max-h-[95vh]">
+      <div className="bg-[#F5EBE0] border-2 border-[#23272F] rounded-lg max-w-2xl w-full flex flex-col overflow-hidden shadow-2xl max-h-[95vh]">
         {/* Modal Header */}
-        <div className="p-4 bg-[#E3E7EC] border-b border-[#23272F] flex items-center justify-between">
+        <div className="p-4 bg-[#D6CCC2] border-b border-[#23272F] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Camera className="w-6 h-6 text-[#5B2A86]" />
             <h2 className="text-xl font-bold text-[#23272F]">
@@ -237,8 +237,8 @@ export default function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured, m
                 className="w-full h-full object-cover min-h-[360px]"
               />
               {/* On-Screen Frame Guide */}
-              <div className="absolute inset-6 md:inset-10 border-2 border-dashed border-[#FFE45C] pointer-events-none rounded flex flex-col justify-between p-3">
-                <span className="bg-[#23272F]/80 text-[#FCFCFA] text-xs px-2 py-1 rounded self-start font-mono">
+              <div className="absolute inset-6 md:inset-10 border-2 border-dashed border-[#D5BDAF] pointer-events-none rounded flex flex-col justify-between p-3">
+                <span className="bg-[#23272F]/80 text-[#F5EBE0] text-xs px-2 py-1 rounded self-start font-mono">
                   {lang === 'ta' ? 'ஆவணத்தை சட்டத்திற்குள் வைக்கவும்' : 'Document guide frame'}
                 </span>
                 <span className="text-white/80 text-xs text-center">
@@ -262,7 +262,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured, m
         </div>
 
         {/* Multi-page indicators & controls */}
-        <div className="p-4 bg-[#E3E7EC] border-t border-[#23272F] flex flex-col gap-3">
+        <div className="p-4 bg-[#D6CCC2] border-t border-[#23272F] flex flex-col gap-3">
           <div className="flex items-center justify-between text-sm font-semibold text-[#23272F]">
             <span>
               {lang === 'ta' ? `பக்கங்கள்: ${capturedPages.length} / ${maxPages}` : `Pages captured: ${capturedPages.length} of ${maxPages}`}
@@ -280,7 +280,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured, m
                 <button
                   type="button"
                   onClick={handleRetake}
-                  className="touch-target-64 px-4 py-3 bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] rounded flex items-center gap-2 hover:bg-gray-100 transition active:scale-95"
+                  className="touch-target-64 px-4 py-3 bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] rounded flex items-center gap-2 hover:bg-gray-100 transition active:scale-95"
                 >
                   <RefreshCw className="w-5 h-5" />
                   <span>{lang === 'ta' ? 'மீண்டும் எடுக்கவும்' : 'Retake'}</span>
@@ -303,7 +303,7 @@ export default function CameraCaptureModal({ isOpen, onClose, onPhotoCaptured, m
                 <button
                   type="button"
                   onClick={onClose}
-                  className="touch-target-64 px-4 py-3 bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-gray-100 transition"
+                  className="touch-target-64 px-4 py-3 bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-gray-100 transition"
                 >
                   {lang === 'ta' ? 'ரத்து' : 'Cancel'}
                 </button>

@@ -17,23 +17,23 @@ export const SheetRow = ({
   return (
     <div
       onClick={() => !isDisabled && onSelectField && onSelectField(field.id)}
-      className={`relative py-3 px-4 transition-colors duration-200 border-b border-[#DCE7E0] cursor-pointer select-none ${
+      className={`relative py-3 px-4 transition-colors duration-200 border-b border-[#D6CCC2] cursor-pointer select-none ${
         isEditing
-          ? 'bg-[#FFE45C] border-l-4 border-l-[#1F3FBF]'
+          ? 'bg-[#D5BDAF] border-l-4 border-l-[#1F3FBF]'
           : isCurrent
-          ? 'bg-[#FFE45C]'
+          ? 'bg-[#D5BDAF]'
           : isUpdated
-          ? 'bg-[#FFE45C]/50'
-          : 'hover:bg-[#DCE7E0]/40'
+          ? 'bg-[#D5BDAF]/50'
+          : 'hover:bg-[#E3D5CA]/40'
       }`}
     >
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center space-x-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#2A2E2C]/75 font-sans-ui">
+          <span className="text-xs font-semibold uppercase tracking-wider text-[#23272F]/75 font-sans-ui">
             {label}
           </span>
           {isAdmin && (
-            <span className="text-[11px] text-[#2A2E2C]/60">
+            <span className="text-[11px] text-[#23272F]/60">
               ({field.data_type})
             </span>
           )}
@@ -46,7 +46,7 @@ export const SheetRow = ({
               e.stopPropagation();
               onSelectField(field.id);
             }}
-            className="p-1 text-[#2A2E2C]/60 hover:text-[#1F3FBF] focus:outline-none transition-colors"
+            className="p-1 text-[#23272F]/60 hover:text-[#1F3FBF] focus:outline-none transition-colors"
             title={`Change ${label}`}
             aria-label={`Change ${label}`}
           >
@@ -61,19 +61,19 @@ export const SheetRow = ({
             <span
               className={`inline-block transition-all ${
                 isEditing
-                  ? 'text-[#2A2E2C]/75 line-through italic'
+                  ? 'text-[#23272F]/75 line-through italic'
                   : 'text-[#1F3FBF] animate-ink-reveal'
               }`}
             >
               {answer}
               {isEditing && (
-                <span className="no-underline text-xs ml-2 text-[#2A2E2C]/75 font-normal">
+                <span className="no-underline text-xs ml-2 text-[#23272F]/75 font-normal">
                   (Previous answer)
                 </span>
               )}
             </span>
           ) : (
-            <span className="text-[#2A2E2C]/60 text-sm font-normal italic">
+            <span className="text-[#23272F]/60 text-sm font-normal italic">
               {isCurrent ? "Asking question..." : "—"}
             </span>
           )}

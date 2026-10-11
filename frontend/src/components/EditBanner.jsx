@@ -6,14 +6,14 @@ export const EditBanner = ({ fieldName, onCancel, uiLang = 'en' }) => {
   const friendlyName = fieldName ? fieldName.replace(/_/g, ' ') : 'field';
 
   return (
-    <div className="bg-[#FFE45C] border border-[#2A2E2C]/20 text-[#2A2E2C] p-3 rounded mb-4 flex items-center justify-between font-sans-ui text-xs">
+    <div className="bg-[#D5BDAF] border border-[#23272F]/20 text-[#23272F] p-3 rounded mb-4 flex items-center justify-between font-sans-ui text-xs">
       <div>
         <span>{t('editing_banner', { field: friendlyName })}</span>
       </div>
       <button
         type="button"
         onClick={onCancel}
-        className="px-2.5 py-1 bg-[#2A2E2C] text-[#F6F8F5] rounded text-xs font-semibold hover:bg-[#2A2E2C]/90 transition-colors focus:ring-2 focus:ring-[#1F3FBF] cursor-pointer"
+        className="px-2.5 py-1 bg-[#23272F] text-[#F5EBE0] rounded text-xs font-semibold hover:bg-[#23272F]/90 transition-colors focus:ring-2 focus:ring-[#1F3FBF] cursor-pointer"
       >
         {t('btn_keep_old')}
       </button>

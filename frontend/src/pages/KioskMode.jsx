@@ -347,9 +347,9 @@ export default function KioskMode() {
   const totalCount = fields.length;
 
   return (
-    <div className="kiosk-mode min-h-screen bg-[#E3E7EC] text-[#23272F] flex flex-col justify-between select-none">
+    <div className="kiosk-mode min-h-screen bg-[#D6CCC2] text-[#23272F] flex flex-col justify-between select-none">
       {/* Kiosk Sticky Persistent Top Bar */}
-      <header className="bg-[#FCFCFA] border-b-2 border-[#23272F] px-4 py-3 flex items-center justify-between no-print shadow-sm">
+      <header className="bg-[#F5EBE0] border-b-2 border-[#23272F] px-4 py-3 flex items-center justify-between no-print shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded bg-[#5B2A86] flex items-center justify-center text-white font-bold text-xl">
             CD
@@ -369,7 +369,7 @@ export default function KioskMode() {
           <button
             type="button"
             onClick={handleCallStaff}
-            className="touch-target-64 px-4 py-2 bg-[#FCFCFA] text-[#5B2A86] border-2 border-[#5B2A86] rounded-md font-bold flex items-center gap-2 hover:bg-[#FFE45C]/40 active:scale-95 transition"
+            className="touch-target-64 px-4 py-2 bg-[#F5EBE0] text-[#5B2A86] border-2 border-[#5B2A86] rounded-md font-bold flex items-center gap-2 hover:bg-[#D5BDAF]/40 active:scale-95 transition"
             aria-label="Call staff for help"
           >
             <HelpCircle className="w-6 h-6 text-[#5B2A86]" />
@@ -381,7 +381,7 @@ export default function KioskMode() {
           <button
             type="button"
             onClick={wipeSessionAndReset}
-            className="touch-target-64 px-4 py-2 bg-[#FCFCFA] text-[#B3261E] border-2 border-[#B3261E] rounded-md font-bold flex items-center gap-2 hover:bg-red-50 active:scale-95 transition"
+            className="touch-target-64 px-4 py-2 bg-[#F5EBE0] text-[#B3261E] border-2 border-[#B3261E] rounded-md font-bold flex items-center gap-2 hover:bg-red-50 active:scale-95 transition"
             aria-label="Start over and wipe session"
           >
             <RefreshCw className="w-6 h-6 text-[#B3261E]" />
@@ -395,7 +395,7 @@ export default function KioskMode() {
             type="button"
             onClick={() => setIsAudioEnabled(!isAudioEnabled)}
             className={`touch-target-64 p-2 border-2 border-[#23272F] rounded-md transition ${
-              isAudioEnabled ? 'bg-[#5B2A86] text-white' : 'bg-[#FCFCFA] text-[#23272F]'
+              isAudioEnabled ? 'bg-[#5B2A86] text-white' : 'bg-[#F5EBE0] text-[#23272F]'
             }`}
             aria-label="Toggle question reading aloud"
           >
@@ -406,7 +406,7 @@ export default function KioskMode() {
 
       {/* Staff TTS Warning Banner if Tamil voice is missing on device */}
       {ttsMissingTamil && step >= KIOSK_STEPS.SERVICE && (
-        <div className="bg-[#FFE45C] text-[#23272F] px-4 py-2 text-sm border-b border-[#23272F] flex items-center justify-between no-print">
+        <div className="bg-[#D5BDAF] text-[#23272F] px-4 py-2 text-sm border-b border-[#23272F] flex items-center justify-between no-print">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 text-[#5B2A86]" />
             <span>
@@ -421,7 +421,7 @@ export default function KioskMode() {
       {/* Call Staff Alert Toast */}
       {helpAlertVisible && (
         <div className="fixed top-20 right-6 z-50 bg-[#5B2A86] text-white p-4 rounded-lg shadow-2xl flex items-center gap-3 border-2 border-white animate-bounce">
-          <CheckCircle className="w-7 h-7 text-[#FFE45C]" />
+          <CheckCircle className="w-7 h-7 text-[#D5BDAF]" />
           <div>
             <p className="font-bold text-lg">
               {selectedLang === 'ta' ? 'அலுவலர் அழைக்கப்பட்டுள்ளார்!' : 'Help is on the way!'}
@@ -454,7 +454,7 @@ export default function KioskMode() {
                   setSelectedLang('ta');
                   setStep(KIOSK_STEPS.SERVICE);
                 }}
-                className="touch-target-64 h-36 bg-[#FCFCFA] border-4 border-[#5B2A86] hover:bg-[#FFE45C] text-[#23272F] rounded-xl shadow-md p-6 flex flex-col items-center justify-center transition active:scale-95"
+                className="touch-target-64 h-36 bg-[#F5EBE0] border-4 border-[#5B2A86] hover:bg-[#D5BDAF] text-[#23272F] rounded-xl shadow-md p-6 flex flex-col items-center justify-center transition active:scale-95"
               >
                 <span className="text-4xl font-bold font-sans-counter text-[#5B2A86]">தமிழ்</span>
                 <span className="text-lg text-[#23272F]/75 mt-2">தமிழ் வழியில் தொடரவும்</span>
@@ -466,7 +466,7 @@ export default function KioskMode() {
                   setSelectedLang('en');
                   setStep(KIOSK_STEPS.SERVICE);
                 }}
-                className="touch-target-64 h-36 bg-[#FCFCFA] border-4 border-[#23272F] hover:bg-[#FFE45C] text-[#23272F] rounded-xl shadow-md p-6 flex flex-col items-center justify-center transition active:scale-95"
+                className="touch-target-64 h-36 bg-[#F5EBE0] border-4 border-[#23272F] hover:bg-[#D5BDAF] text-[#23272F] rounded-xl shadow-md p-6 flex flex-col items-center justify-center transition active:scale-95"
               >
                 <span className="text-4xl font-bold text-[#23272F]">English</span>
                 <span className="text-lg text-[#23272F]/75 mt-2">Continue in English</span>
@@ -500,7 +500,7 @@ export default function KioskMode() {
                     setSelectedService(srv);
                     setStep(KIOSK_STEPS.PRIVACY);
                   }}
-                  className="touch-target-64 min-h-[160px] bg-[#FCFCFA] border-3 border-[#23272F] hover:border-[#5B2A86] hover:bg-[#FFE45C]/30 rounded-xl p-6 text-left flex flex-col justify-between shadow-sm active:scale-95 transition"
+                  className="touch-target-64 min-h-[160px] bg-[#F5EBE0] border-3 border-[#23272F] hover:border-[#5B2A86] hover:bg-[#D5BDAF]/30 rounded-xl p-6 text-left flex flex-col justify-between shadow-sm active:scale-95 transition"
                 >
                   <div>
                     <h3 className="text-2xl font-bold text-[#1F3FBF] leading-snug">{srv.title}</h3>
@@ -524,7 +524,7 @@ export default function KioskMode() {
 
         {/* STEP 3: PRIVACY NOTICE AND CONSENT */}
         {step === KIOSK_STEPS.PRIVACY && (
-          <div className="max-w-2xl mx-auto bg-[#FCFCFA] border-3 border-[#23272F] rounded-xl p-6 md:p-8 space-y-6 my-auto shadow-md">
+          <div className="max-w-2xl mx-auto bg-[#F5EBE0] border-3 border-[#23272F] rounded-xl p-6 md:p-8 space-y-6 my-auto shadow-md">
             <div className="flex items-center gap-3 border-b-2 border-[#23272F] pb-4">
               <Shield className="w-10 h-10 text-[#5B2A86]" />
               <div>
@@ -557,7 +557,7 @@ export default function KioskMode() {
               <button
                 type="button"
                 onClick={() => setStep(KIOSK_STEPS.SERVICE)}
-                className="touch-target-64 px-6 py-4 bg-[#E3E7EC] text-[#23272F] font-bold text-lg rounded-lg border-2 border-[#23272F] hover:bg-gray-300 transition"
+                className="touch-target-64 px-6 py-4 bg-[#D6CCC2] text-[#23272F] font-bold text-lg rounded-lg border-2 border-[#23272F] hover:bg-gray-300 transition"
               >
                 {selectedLang === 'ta' ? 'பின்செல்' : 'Back'}
               </button>
@@ -579,7 +579,7 @@ export default function KioskMode() {
         {step === KIOSK_STEPS.VOICE_FILL && (
           <div className="flex-1 flex flex-col lg:flex-row gap-6 my-auto">
             {/* Left / Top: Active Question & Input Controls */}
-            <div className="lg:w-1/2 flex flex-col justify-between bg-[#FCFCFA] border-2 border-[#23272F] rounded-lg p-6 shadow-sm">
+            <div className="lg:w-1/2 flex flex-col justify-between bg-[#F5EBE0] border-2 border-[#23272F] rounded-lg p-6 shadow-sm">
               <div>
                 {/* Progress line */}
                 <div className="mb-4">
@@ -591,7 +591,7 @@ export default function KioskMode() {
                     </span>
                     <span>{Math.round((answeredCount / Math.max(1, totalCount)) * 100)}%</span>
                   </div>
-                  <div className="w-full bg-[#E3E7EC] h-3 rounded-full overflow-hidden">
+                  <div className="w-full bg-[#D6CCC2] h-3 rounded-full overflow-hidden">
                     <div
                       className="bg-[#5B2A86] h-full transition-all duration-300"
                       style={{ width: `${(answeredCount / Math.max(1, totalCount)) * 100}%` }}
@@ -600,7 +600,7 @@ export default function KioskMode() {
                 </div>
 
                 {/* Active Question Title */}
-                <div className="bg-[#FFE45C]/30 border-l-4 border-[#5B2A86] p-4 rounded mb-4">
+                <div className="bg-[#D5BDAF]/30 border-l-4 border-[#5B2A86] p-4 rounded mb-4">
                   <span className="text-xs uppercase font-mono text-[#5B2A86] block mb-1">
                     {selectedLang === 'ta' ? 'கேள்வி' : 'Current Question'} #{currentFieldIndex + 1}
                   </span>
@@ -670,7 +670,7 @@ export default function KioskMode() {
                   <button
                     type="button"
                     onClick={() => setShowKeyboard(!showKeyboard)}
-                    className="touch-target-64 px-4 py-3 bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] rounded-lg flex items-center gap-2 hover:bg-[#FFE45C] transition active:scale-95"
+                    className="touch-target-64 px-4 py-3 bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] rounded-lg flex items-center gap-2 hover:bg-[#D5BDAF] transition active:scale-95"
                   >
                     <Keyboard className="w-6 h-6 text-[#5B2A86]" />
                     <span>{selectedLang === 'ta' ? 'தட்டச்சு விசைப்பலகை' : 'On-Screen Keyboard'}</span>
@@ -679,7 +679,7 @@ export default function KioskMode() {
                   <button
                     type="button"
                     onClick={() => setShowCamera(true)}
-                    className="touch-target-64 px-4 py-3 bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] rounded-lg flex items-center gap-2 hover:bg-[#FFE45C] transition active:scale-95"
+                    className="touch-target-64 px-4 py-3 bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] rounded-lg flex items-center gap-2 hover:bg-[#D5BDAF] transition active:scale-95"
                   >
                     <Camera className="w-6 h-6 text-[#1F3FBF]" />
                     <span>{selectedLang === 'ta' ? 'ஆவண புகைப்படம்' : 'Take Document Photo'}</span>
@@ -696,7 +696,7 @@ export default function KioskMode() {
                         wsRef.current.send(JSON.stringify({ type: 'back' }));
                       }
                     }}
-                    className="touch-target-64 px-4 py-2 bg-[#E3E7EC] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-gray-300 disabled:opacity-40 transition"
+                    className="touch-target-64 px-4 py-2 bg-[#D6CCC2] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-gray-300 disabled:opacity-40 transition"
                   >
                     <ArrowLeft className="w-5 h-5 inline mr-1" />
                     <span>{selectedLang === 'ta' ? 'முந்தைய கேள்வி' : 'Previous'}</span>
@@ -715,10 +715,10 @@ export default function KioskMode() {
             </div>
 
             {/* Right / Bottom: The Paper Sheet */}
-            <div className="lg:w-1/2 bg-[#FCFCFA] border-2 border-[#23272F] rounded-lg p-6 overflow-y-auto max-h-[70vh] paper-sheet">
+            <div className="lg:w-1/2 bg-[#F5EBE0] border-2 border-[#23272F] rounded-lg p-6 overflow-y-auto max-h-[70vh] paper-sheet">
               <div className="border-b-2 border-[#23272F] pb-3 mb-4 flex justify-between items-center">
                 <h3 className="text-xl font-bold font-serif-printed">{selectedService?.title}</h3>
-                <span className="text-xs bg-[#E3E7EC] px-2 py-1 rounded font-mono font-bold">
+                <span className="text-xs bg-[#D6CCC2] px-2 py-1 rounded font-mono font-bold">
                   {selectedLang === 'ta' ? 'படிவத் தாள்' : 'Application Sheet'}
                 </span>
               </div>
@@ -737,7 +737,7 @@ export default function KioskMode() {
                         }
                       }}
                       className={`ruled-row p-3 rounded cursor-pointer transition flex justify-between items-center ${
-                        isActive ? 'active-highlighter-row border-2 border-[#23272F]' : 'hover:bg-[#E3E7EC]/40'
+                        isActive ? 'active-highlighter-row border-2 border-[#23272F]' : 'hover:bg-[#D6CCC2]/40'
                       }`}
                     >
                       <div className="pr-4">
@@ -765,7 +765,7 @@ export default function KioskMode() {
 
         {/* STEP 5: REVIEW */}
         {step === KIOSK_STEPS.REVIEW && (
-          <div className="max-w-3xl mx-auto w-full bg-[#FCFCFA] border-3 border-[#23272F] rounded-xl p-6 md:p-8 space-y-6 my-auto shadow-md">
+          <div className="max-w-3xl mx-auto w-full bg-[#F5EBE0] border-3 border-[#23272F] rounded-xl p-6 md:p-8 space-y-6 my-auto shadow-md">
             <div className="border-b-2 border-[#23272F] pb-4 flex justify-between items-center">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold font-serif-printed text-[#23272F]">
@@ -807,7 +807,7 @@ export default function KioskMode() {
               <button
                 type="button"
                 onClick={() => setStep(KIOSK_STEPS.VOICE_FILL)}
-                className="touch-target-64 px-6 py-4 bg-[#E3E7EC] text-[#23272F] font-bold text-lg rounded-lg border-2 border-[#23272F] hover:bg-gray-300 transition"
+                className="touch-target-64 px-6 py-4 bg-[#D6CCC2] text-[#23272F] font-bold text-lg rounded-lg border-2 border-[#23272F] hover:bg-gray-300 transition"
               >
                 {selectedLang === 'ta' ? 'பதில்களை மாற்றுக' : 'Change Answers'}
               </button>
@@ -832,7 +832,7 @@ export default function KioskMode() {
         {/* STEP 6: SUBMITTED RECEIPT & FINISH */}
         {step === KIOSK_STEPS.RECEIPT && (
           <div className="max-w-2xl mx-auto w-full space-y-6 my-auto text-center">
-            <div className="bg-[#FCFCFA] border-3 border-[#23272F] rounded-xl p-6 md:p-8 shadow-xl">
+            <div className="bg-[#F5EBE0] border-3 border-[#23272F] rounded-xl p-6 md:p-8 shadow-xl">
               <div className="flex justify-center mb-4">
                 <div className="stamp-received">
                   <span className="text-xs block font-mono">OFFICE</span>
@@ -850,7 +850,7 @@ export default function KioskMode() {
               </p>
 
               {/* Reference Number in Boxed Cells */}
-              <div className="my-6 p-4 bg-[#E3E7EC]/40 border-2 border-[#23272F] rounded-lg">
+              <div className="my-6 p-4 bg-[#D6CCC2]/40 border-2 border-[#23272F] rounded-lg">
                 <span className="text-xs uppercase font-mono font-bold text-[#23272F]/70 block mb-2">
                   {selectedLang === 'ta' ? 'உங்கள் குறிப்பு எண் (Reference Number)' : 'Your Reference Number'}
                 </span>
@@ -868,7 +868,7 @@ export default function KioskMode() {
                 <button
                   type="button"
                   onClick={() => handlePrint('slip')}
-                  className="touch-target-64 py-4 px-6 bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] hover:bg-[#FFE45C] rounded-lg flex items-center justify-center gap-3 transition active:scale-95 shadow"
+                  className="touch-target-64 py-4 px-6 bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] hover:bg-[#D5BDAF] rounded-lg flex items-center justify-center gap-3 transition active:scale-95 shadow"
                 >
                   <Printer className="w-6 h-6 text-[#5B2A86]" />
                   <span>{selectedLang === 'ta' ? 'ரசீதை அச்சிடு (80mm)' : 'Print Receipt Slip (80mm)'}</span>
@@ -877,7 +877,7 @@ export default function KioskMode() {
                 <button
                   type="button"
                   onClick={() => handlePrint('a4')}
-                  className="touch-target-64 py-4 px-6 bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] hover:bg-[#FFE45C] rounded-lg flex items-center justify-center gap-3 transition active:scale-95 shadow"
+                  className="touch-target-64 py-4 px-6 bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] hover:bg-[#D5BDAF] rounded-lg flex items-center justify-center gap-3 transition active:scale-95 shadow"
                 >
                   <FileText className="w-6 h-6 text-[#1F3FBF]" />
                   <span>{selectedLang === 'ta' ? 'முழு படிவ நகல் (A4)' : 'Print Full A4 Copy'}</span>
@@ -900,7 +900,7 @@ export default function KioskMode() {
       {/* On-Screen Virtual Keyboard Drawer */}
       {showKeyboard && (
         <div className="fixed bottom-0 left-0 right-0 z-40">
-          <div className="bg-[#FCFCFA] border-t-2 border-[#23272F] p-3 flex gap-2 items-center">
+          <div className="bg-[#F5EBE0] border-t-2 border-[#23272F] p-3 flex gap-2 items-center">
             <input
               type="text"
               value={typedInputText}
@@ -953,7 +953,7 @@ export default function KioskMode() {
       {/* Idle Countdown Modal ("Are you still there?") */}
       {idleModalVisible && (
         <div className="fixed inset-0 z-50 bg-[#23272F]/85 flex items-center justify-center p-4">
-          <div className="bg-[#FCFCFA] border-4 border-[#B3261E] rounded-xl p-8 max-w-lg w-full text-center space-y-6 shadow-2xl">
+          <div className="bg-[#F5EBE0] border-4 border-[#B3261E] rounded-xl p-8 max-w-lg w-full text-center space-y-6 shadow-2xl">
             <AlertCircle className="w-16 h-16 text-[#B3261E] mx-auto animate-pulse" />
             <h2 className="text-3xl font-bold font-serif-printed text-[#23272F]">
               {selectedLang === 'ta' ? 'நீங்கள் இன்னும் இங்கே இருக்கிறீர்களா?' : 'Are you still there?'}

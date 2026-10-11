@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children, requireRole }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#DCE7E0] flex flex-col items-center justify-center text-[#2A2E2C]">
+      <div className="min-h-screen bg-[#EDEDE9] flex flex-col items-center justify-center text-[#23272F]">
         <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF] mb-3" />
         <p className="text-xs font-sans-ui">Verifying session...</p>
       </div>
@@ -50,7 +50,7 @@ const RootRedirect = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#DCE7E0] flex items-center justify-center">
+      <div className="min-h-screen bg-[#EDEDE9] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF]" />
       </div>
     );
@@ -68,7 +68,7 @@ export default function App() {
       <BrowserRouter>
         <Suspense
           fallback={
-            <div className="min-h-screen bg-[#DCE7E0] flex items-center justify-center">
+            <div className="min-h-screen bg-[#EDEDE9] flex items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF]" />
             </div>
           }

@@ -23,6 +23,16 @@
 @import "tailwindcss";
 
 @theme {
+  --color-sheet: #F5EBE0;
+  --color-counter: #D6CCC2;
+  --color-highlighter: #D5BDAF;
+  --color-parchment: #EDEDE9;
+  --color-petal: #E3D5CA;
+  --color-charcoal: #23272F;
+  --color-pen-blue: #1F3FBF;
+  --color-stamp-violet: #5B2A86;
+  --color-error: #B3261E;
+
   --font-heading: 'Khand', 'Noto Serif Tamil', sans-serif;
   --font-subheading: 'Nobile', 'Noto Serif Tamil', sans-serif;
   --font-body: 'Anaheim', 'Noto Serif Tamil', sans-serif;
@@ -38,20 +48,26 @@
     --font-subheading: 'Nobile', 'Noto Serif Tamil', sans-serif;
     --font-body: 'Anaheim', 'Noto Serif Tamil', sans-serif;
 
-    /* Citizen Desk Palette - Counter at a service office */
-    --color-sheet: #FCFCFA;          /* Form white */
-    --color-counter: #E3E7EC;        /* Counter background & ruled lines */
-    --color-charcoal: #23272F;       /* Printed text (Contrast > 7:1) */
-    --color-pen-blue: #1F3FBF;       /* Answers in pen blue */
-    --color-stamp-violet: #5B2A86;   /* Stamp violet (primary actions & rubber stamp) */
-    --color-highlighter: #FFE45C;    /* Active row highlighter */
-    --color-error: #B3261E;          /* Functional error */
+    /* Surfaces: from your new palette */
+    --color-sheet: #F5EBE0;        /* Linen – form background, character boxes, paper sheets */
+    --color-counter: #D6CCC2;      /* Dust Grey – desk background, ruled lines, borders */
+    --color-highlighter: #D5BDAF;  /* Almond Silk – active guided row during voice input */
+
+    /* Extra tokens for the remaining two colors */
+    --color-parchment: #EDEDE9;    /* page/desk wash, input and character-box fill */
+    --color-petal: #E3D5CA;        /* hover states, disabled fields, subtle panels */
+
+    /* Kept: your new palette has no dark or saturated colors */
+    --color-charcoal: #23272F;     /* primary text */
+    --color-pen-blue: #1F3FBF;     /* citizen answers / ink */
+    --color-stamp-violet: #5B2A86; /* primary CTAs, focus rings, "Received" stamp */
+    --color-error: #B3261E;        /* validation errors */
 
     font-family: var(--font-body);
     font-size: 18px;
     line-height: 1.5;
     color: var(--color-charcoal);
-    background-color: var(--color-counter);
+    background-color: var(--color-parchment);
   }
 
   body {
@@ -59,7 +75,7 @@
     padding: 0;
     min-height: 100dvh;
     font-family: var(--font-body);
-    background-color: var(--color-counter);
+    background-color: var(--color-parchment);
     color: var(--color-charcoal);
   }
 
@@ -143,7 +159,7 @@
   letter-spacing: 0.08em;
   transform: rotate(-5deg);
   border-radius: 6px;
-  background-color: rgba(252, 252, 250, 0.95);
+  background-color: var(--color-sheet);
   display: inline-block;
   padding: 8px 16px;
   box-shadow: 0 0 0 1px var(--color-stamp-violet);

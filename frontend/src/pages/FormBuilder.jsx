@@ -37,49 +37,49 @@ const SortableFieldItem = ({
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg p-5 mb-4 space-y-4 sheet-shadow relative"
+      className="bg-[#F5EBE0] border border-[#D6CCC2] rounded-lg p-5 mb-4 space-y-4 sheet-shadow relative"
     >
-      <div className="flex items-center justify-between gap-4 border-b border-[#DCE7E0] pb-3">
+      <div className="flex items-center justify-between gap-4 border-b border-[#D6CCC2] pb-3">
         <div className="flex items-center space-x-3">
           <button
             type="button"
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing p-1.5 text-[#2A2E2C]/60 hover:text-[#2A2E2C] rounded"
+            className="cursor-grab active:cursor-grabbing p-1.5 text-[#23272F]/60 hover:text-[#23272F] rounded"
             aria-label="Drag field row"
           >
             <GripVertical className="w-5 h-5" />
           </button>
-          <span className="text-xs font-semibold text-[#2A2E2C] uppercase tracking-wider bg-[#DCE7E0] px-3 py-1 rounded">
+          <span className="text-xs font-semibold text-[#23272F] uppercase tracking-wider bg-[#D6CCC2] px-3 py-1 rounded">
             Field #{index + 1}
           </span>
         </div>
 
         <div className="flex items-center space-x-4 font-sans-ui">
-          <label className="flex items-center space-x-2 text-xs text-[#2A2E2C]/75 cursor-pointer">
+          <label className="flex items-center space-x-2 text-xs text-[#23272F]/75 cursor-pointer">
             <input
               type="checkbox"
               checked={Boolean(field.is_sensitive_number)}
               onChange={(e) => updateField(index, 'is_sensitive_number', e.target.checked)}
-              className="rounded border-[#DCE7E0] text-[#5B2A86] focus:ring-[#5B2A86]"
+              className="rounded border-[#D6CCC2] text-[#5B2A86] focus:ring-[#5B2A86]"
             />
             <span className={field.is_sensitive_number ? 'font-semibold text-[#5B2A86]' : ''}>
               Sensitive number
             </span>
           </label>
-          <label className="flex items-center space-x-2 text-xs text-[#2A2E2C]/75 cursor-pointer">
+          <label className="flex items-center space-x-2 text-xs text-[#23272F]/75 cursor-pointer">
             <input
               type="checkbox"
               checked={field.required}
               onChange={(e) => updateField(index, 'required', e.target.checked)}
-              className="rounded border-[#DCE7E0] text-[#1F3FBF] focus:ring-[#1F3FBF]"
+              className="rounded border-[#D6CCC2] text-[#1F3FBF] focus:ring-[#1F3FBF]"
             />
             <span>Required</span>
           </label>
           <button
             type="button"
             onClick={() => removeField(index)}
-            className="p-1.5 text-[#2A2E2C]/60 hover:text-[#B3261E] rounded transition-colors cursor-pointer"
+            className="p-1.5 text-[#23272F]/60 hover:text-[#B3261E] rounded transition-colors cursor-pointer"
             title="Delete field"
           >
             <Trash2 className="w-4 h-4" />
@@ -89,7 +89,7 @@ const SortableFieldItem = ({
 
       {/* Auto-suggest banner when sensitive keywords matched */}
       {isSensitiveMatch && !field.is_sensitive_number && (
-        <div className="bg-[#FFE45C]/35 border border-[#23272F]/20 p-2.5 rounded text-xs text-[#23272F] flex items-center justify-between">
+        <div className="bg-[#D5BDAF]/35 border border-[#23272F]/20 p-2.5 rounded text-xs text-[#23272F] flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 text-[#5B2A86] shrink-0" />
             <span>Keyword match: "{field.field_name || field.description}". Enable "Sensitive number" protection?</span>
@@ -97,7 +97,7 @@ const SortableFieldItem = ({
           <button
             type="button"
             onClick={() => updateField(index, 'is_sensitive_number', true)}
-            className="px-2.5 py-1 bg-[#5B2A86] text-[#FCFCFA] text-[11px] font-semibold rounded hover:bg-[#5B2A86]/90 cursor-pointer shrink-0 ml-2"
+            className="px-2.5 py-1 bg-[#5B2A86] text-[#F5EBE0] text-[11px] font-semibold rounded hover:bg-[#5B2A86]/90 cursor-pointer shrink-0 ml-2"
           >
             Enable protection
           </button>
@@ -106,7 +106,7 @@ const SortableFieldItem = ({
 
       {/* Warning banner when sensitive number is enabled */}
       {field.is_sensitive_number && (
-        <div className="bg-[#FFE45C]/20 border-l-4 border-[#5B2A86] p-3 rounded text-xs text-[#23272F] space-y-1">
+        <div className="bg-[#D5BDAF]/20 border-l-4 border-[#5B2A86] p-3 rounded text-xs text-[#23272F] space-y-1">
           <div className="flex items-center space-x-1.5 font-semibold text-[#5B2A86]">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>Sensitive Number Protection Active</span>
@@ -122,7 +122,7 @@ const SortableFieldItem = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans-ui">
         <div>
-          <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
             Field Name
           </label>
           <input
@@ -131,18 +131,18 @@ const SortableFieldItem = ({
             value={field.field_name}
             onChange={(e) => updateField(index, 'field_name', e.target.value)}
             placeholder="e.g. full_name, age, blood_group"
-            className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+            className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-2 text-sm text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
             Data Type
           </label>
           <select
             value={field.data_type}
             onChange={(e) => updateField(index, 'data_type', e.target.value)}
-            className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+            className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-2 text-sm text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
           >
             {DATA_TYPES.map((dt) => (
               <option key={dt} value={dt}>
@@ -154,7 +154,7 @@ const SortableFieldItem = ({
       </div>
 
       <div className="font-sans-ui">
-        <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+        <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
           Description (Context for AI)
         </label>
         <input
@@ -162,13 +162,13 @@ const SortableFieldItem = ({
           value={field.description || ''}
           onChange={(e) => updateField(index, 'description', e.target.value)}
           placeholder="e.g. age of the applicant in years"
-          className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+          className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-2 text-sm text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
         />
       </div>
 
       {field.data_type === 'Choice' && (
-        <div className="font-sans-ui bg-[#DCE7E0]/30 p-3 rounded border border-[#DCE7E0]">
-          <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+        <div className="font-sans-ui bg-[#D6CCC2]/30 p-3 rounded border border-[#D6CCC2]">
+          <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
             Choices (Comma separated)
           </label>
           <input
@@ -176,15 +176,15 @@ const SortableFieldItem = ({
             value={Array.isArray(field.choices) ? field.choices.join(', ') : field.choices || ''}
             onChange={(e) => choicesEditor(index, e.target.value)}
             placeholder="Female, Male, Other, Prefer not to say"
-            className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+            className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-2 text-sm text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
           />
         </div>
       )}
 
       {/* Question Previews */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#DCE7E0] font-sans-ui">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#D6CCC2] font-sans-ui">
         <div>
-          <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
             English Question Preview
           </label>
           <input
@@ -192,11 +192,11 @@ const SortableFieldItem = ({
             value={field.question_en || ''}
             onChange={(e) => updateField(index, 'question_en', e.target.value)}
             placeholder="Generated on publish if blank"
-            className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-1.5 text-xs text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+            className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-1.5 text-xs text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+          <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
             Tamil Question Preview (தமிழ்)
           </label>
           <input
@@ -205,7 +205,7 @@ const SortableFieldItem = ({
             onChange={(e) => updateField(index, 'question_ta', e.target.value)}
             placeholder="Generated on publish if blank"
             lang="ta"
-            className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-1.5 text-xs text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none tamil-text"
+            className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-1.5 text-xs text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none tamil-text"
           />
         </div>
       </div>
@@ -371,7 +371,7 @@ export const FormBuilder = () => {
   }));
 
   return (
-    <div className="min-h-screen bg-[#DCE7E0] text-[#2A2E2C] flex flex-col font-sans-ui">
+    <div className="min-h-screen bg-[#EDEDE9] text-[#23272F] flex flex-col font-sans-ui">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -380,19 +380,19 @@ export const FormBuilder = () => {
         )}
 
         {/* Top bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-[#DCE7E0]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-[#D6CCC2]">
           <div className="flex items-center space-x-4">
             <Link
               to="/admin"
-              className="p-2 bg-[#F6F8F5] border border-[#DCE7E0] text-[#2A2E2C] hover:bg-[#DCE7E0] rounded transition-colors"
+              className="p-2 bg-[#F5EBE0] border border-[#D6CCC2] text-[#23272F] hover:bg-[#E3D5CA] rounded transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold font-serif text-[#2A2E2C]">
+              <h1 className="text-2xl font-bold font-serif text-[#23272F]">
                 {isEdit ? 'Edit Form' : 'Create Form'}
               </h1>
-              <p className="text-xs text-[#2A2E2C]/75 mt-0.5">
+              <p className="text-xs text-[#23272F]/75 mt-0.5">
                 Define numbered field rows and preview the application slip.
               </p>
             </div>
@@ -403,7 +403,7 @@ export const FormBuilder = () => {
               type="button"
               onClick={() => handleSave(false)}
               disabled={saving}
-              className="px-4 py-2 border border-[#1F3FBF] text-[#1F3FBF] hover:bg-[#1F3FBF] hover:text-[#F6F8F5] font-semibold text-sm rounded transition-colors cursor-pointer"
+              className="px-4 py-2 border border-[#1F3FBF] text-[#1F3FBF] hover:bg-[#1F3FBF] hover:text-[#F5EBE0] font-semibold text-sm rounded transition-colors cursor-pointer"
             >
               Save draft
             </button>
@@ -411,7 +411,7 @@ export const FormBuilder = () => {
               type="button"
               onClick={() => handleSave(true)}
               disabled={saving}
-              className="px-4 py-2 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F6F8F5] font-semibold text-sm rounded transition-colors flex items-center space-x-2 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
+              className="px-4 py-2 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F5EBE0] font-semibold text-sm rounded transition-colors flex items-center space-x-2 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Publish form</span>
@@ -420,14 +420,14 @@ export const FormBuilder = () => {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-[#F6F8F5] border-l-4 border-[#B3261E] text-[#B3261E] text-xs flex items-center space-x-2">
+          <div className="mb-6 p-4 bg-[#F5EBE0] border-l-4 border-[#B3261E] text-[#B3261E] text-xs flex items-center space-x-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center text-[#2A2E2C]/75 bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg">
+          <div className="py-20 flex flex-col items-center justify-center text-[#23272F]/75 bg-[#F5EBE0] border border-[#D6CCC2] rounded-lg">
             <Loader2 className="w-8 h-8 animate-spin text-[#1F3FBF] mb-4" />
             <p className="text-sm">Loading form configuration...</p>
           </div>
@@ -436,9 +436,9 @@ export const FormBuilder = () => {
             {/* Left: Form Metadata & Numbered Fields (7 cols) */}
             <div className="lg:col-span-7 space-y-6">
               {/* Form Info Card */}
-              <div className="bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg p-6 sheet-shadow space-y-4">
+              <div className="bg-[#F5EBE0] border border-[#D6CCC2] rounded-lg p-6 sheet-shadow space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
                     Form Title
                   </label>
                   <input
@@ -447,12 +447,12 @@ export const FormBuilder = () => {
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Income certificate request"
-                    className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-base text-[#2A2E2C] font-serif font-bold focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+                    className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-2 text-base text-[#23272F] font-serif font-bold focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#2A2E2C]/75 uppercase tracking-wider mb-1">
+                  <label className="block text-xs font-semibold text-[#23272F]/75 uppercase tracking-wider mb-1">
                     Description
                   </label>
                   <textarea
@@ -460,16 +460,16 @@ export const FormBuilder = () => {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Short description for citizens and staff"
-                    className="w-full bg-[#F6F8F5] border border-[#DCE7E0] rounded px-3 py-2 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+                    className="w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded px-3 py-2 text-sm text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
                   />
                 </div>
 
-                <label className="flex items-center space-x-2 text-xs text-[#2A2E2C]/75 cursor-pointer pt-1">
+                <label className="flex items-center space-x-2 text-xs text-[#23272F]/75 cursor-pointer pt-1">
                   <input
                     type="checkbox"
                     checked={allowDocUpload}
                     onChange={(e) => setAllowDocUpload(e.target.checked)}
-                    className="rounded border-[#DCE7E0] text-[#1F3FBF] focus:ring-[#1F3FBF]"
+                    className="rounded border-[#D6CCC2] text-[#1F3FBF] focus:ring-[#1F3FBF]"
                   />
                   <span>Allow citizens to upload supporting documents (.pdf / .docx)</span>
                 </label>
@@ -477,13 +477,13 @@ export const FormBuilder = () => {
 
               {/* Numbered Fields Header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold font-serif text-[#2A2E2C]">
+                <h2 className="text-lg font-bold font-serif text-[#23272F]">
                   Form Fields (Ordered)
                 </h2>
                 <button
                   type="button"
                   onClick={handleAddField}
-                  className="px-3 py-1.5 bg-[#1F3FBF] text-[#F6F8F5] text-xs font-semibold rounded flex items-center space-x-1 cursor-pointer"
+                  className="px-3 py-1.5 bg-[#1F3FBF] text-[#F5EBE0] text-xs font-semibold rounded flex items-center space-x-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Field</span>
@@ -519,7 +519,7 @@ export const FormBuilder = () => {
             <div className="lg:col-span-5">
               <div className="sticky top-24 space-y-3">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#2A2E2C]/75">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#23272F]/75">
                     Live Application Slip Preview
                   </span>
                 </div>

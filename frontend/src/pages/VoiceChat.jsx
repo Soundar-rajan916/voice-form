@@ -479,7 +479,7 @@ export const VoiceChat = () => {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="min-h-screen bg-[#DCE7E0] text-[#2A2E2C] flex flex-col h-screen overflow-hidden relative font-sans-ui"
+      className="min-h-screen bg-[#EDEDE9] text-[#23272F] flex flex-col h-screen overflow-hidden relative font-sans-ui"
     >
       <Navbar
         uiLang={uiLang}
@@ -497,32 +497,32 @@ export const VoiceChat = () => {
 
       {/* Drag Overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-50 bg-[#F6F8F5]/90 flex flex-col items-center justify-center border-4 border-dashed border-[#1F3FBF] pointer-events-none">
+        <div className="absolute inset-0 z-50 bg-[#F5EBE0]/90 flex flex-col items-center justify-center border-4 border-dashed border-[#1F3FBF] pointer-events-none">
           <Upload className="w-16 h-16 text-[#1F3FBF] mb-4" />
-          <h2 className="text-2xl font-bold font-serif text-[#2A2E2C]">Drop document to upload</h2>
-          <p className="text-sm text-[#2A2E2C]/75 mt-1">Only .pdf and .docx files are accepted</p>
+          <h2 className="text-2xl font-bold font-serif text-[#23272F]">Drop document to upload</h2>
+          <p className="text-sm text-[#23272F]/75 mt-1">Only .pdf and .docx files are accepted</p>
         </div>
       )}
 
       {/* Main Container */}
       <div className="flex-1 max-w-7xl w-full mx-auto p-4 flex gap-6 overflow-hidden">
         {/* LEFT COLUMN: Conversation Thread & Controls */}
-        <div className="flex-1 bg-[#F6F8F5] border border-[#DCE7E0] rounded-lg sheet-shadow flex flex-col overflow-hidden relative">
+        <div className="flex-1 bg-[#F5EBE0] border border-[#D6CCC2] rounded-lg sheet-shadow flex flex-col overflow-hidden relative">
           {/* Header */}
-          <div className="p-4 border-b border-[#DCE7E0] flex items-center justify-between bg-[#F6F8F5]">
+          <div className="p-4 border-b border-[#D6CCC2] flex items-center justify-between bg-[#F5EBE0]">
             <div className="flex items-center space-x-3">
               <Link
                 to="/user"
-                className="p-2 text-[#2A2E2C]/75 hover:text-[#2A2E2C] rounded transition-colors focus:ring-2 focus:ring-[#1F3FBF]"
+                className="p-2 text-[#23272F]/75 hover:text-[#23272F] rounded transition-colors focus:ring-2 focus:ring-[#1F3FBF]"
                 aria-label="Back to forms"
               >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div>
-                <h2 className="text-base font-bold font-serif text-[#2A2E2C]">
+                <h2 className="text-base font-bold font-serif text-[#23272F]">
                   {formTitle}
                 </h2>
-                <p className="text-xs text-[#2A2E2C]/75">
+                <p className="text-xs text-[#23272F]/75">
                   {submissionStatus === 'submitted'
                     ? 'Form submitted and locked'
                     : mode === 'editing'
@@ -549,7 +549,7 @@ export const VoiceChat = () => {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={docUploading}
-                  className="px-3 py-1.5 border border-[#DCE7E0] hover:bg-[#DCE7E0]/50 text-[#2A2E2C] text-xs font-semibold rounded flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#23272F] text-xs font-semibold rounded flex items-center space-x-1.5 transition-colors cursor-pointer"
                   title="Upload supporting document"
                 >
                   <Upload className="w-3.5 h-3.5 text-[#1F3FBF]" />
@@ -561,7 +561,7 @@ export const VoiceChat = () => {
                 <button
                   type="button"
                   onClick={() => setDebugPanelOpen(!debugPanelOpen)}
-                  className="p-2 text-[#2A2E2C]/75 hover:text-[#1F3FBF] rounded text-xs font-mono"
+                  className="p-2 text-[#23272F]/75 hover:text-[#1F3FBF] rounded text-xs font-mono"
                   title="Toggle debug panel"
                 >
                   <Code className="w-4 h-4" />
@@ -572,7 +572,7 @@ export const VoiceChat = () => {
 
           {/* Edit Banner */}
           {mode === 'editing' && activeEditingField && (
-            <div className="p-2 px-4 bg-[#FFE45C] border-b border-[#DCE7E0]">
+            <div className="p-2 px-4 bg-[#D5BDAF] border-b border-[#D6CCC2]">
               <EditBanner
                 fieldName={activeEditingField.field_name}
                 onCancel={handleCancelEditing}
@@ -601,7 +601,7 @@ export const VoiceChat = () => {
           </div>
 
           {/* Mic & Text Input Action Area */}
-          <div className="p-4 border-t border-[#DCE7E0] bg-[#F6F8F5] space-y-3">
+          <div className="p-4 border-t border-[#D6CCC2] bg-[#F5EBE0] space-y-3">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <MicControl
                 vadState={vadState}
@@ -616,7 +616,7 @@ export const VoiceChat = () => {
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                className="lg:hidden w-full sm:w-auto py-2 px-3 border border-[#DCE7E0] rounded text-xs text-[#2A2E2C] font-semibold flex items-center justify-between space-x-2"
+                className="lg:hidden w-full sm:w-auto py-2 px-3 border border-[#D6CCC2] rounded text-xs text-[#23272F] font-semibold flex items-center justify-between space-x-2"
               >
                 <span>{currentField ? currentField.field_name.replace(/_/g, ' ') : 'Sheet'}</span>
                 <span className="text-[#1F3FBF] flex items-center space-x-1">
@@ -635,12 +635,12 @@ export const VoiceChat = () => {
                   value={textInput}
                   onChange={(e) => setTextInput(e.target.value)}
                   placeholder="Type your answer..."
-                  className="flex-1 bg-[#F6F8F5] border border-[#DCE7E0] rounded px-4 py-2.5 text-sm text-[#2A2E2C] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
+                  className="flex-1 bg-[#F5EBE0] border border-[#D6CCC2] rounded px-4 py-2.5 text-sm text-[#23272F] focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none"
                 />
                 <button
                   type="submit"
                   disabled={!textInput.trim()}
-                  className="px-4 py-2.5 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F6F8F5] font-semibold text-sm rounded transition-colors disabled:opacity-40 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
+                  className="px-4 py-2.5 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F5EBE0] font-semibold text-sm rounded transition-colors disabled:opacity-40 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
                 >
                   Send
                 </button>
@@ -697,10 +697,10 @@ export const VoiceChat = () => {
 
       {/* Debug Panel (Only when DEV or ?debug=1) */}
       {isDev && debugPanelOpen && (
-        <div className="fixed bottom-0 right-0 w-96 max-h-80 bg-[#2A2E2C] text-[#F6F8F5] p-4 font-mono text-xs overflow-y-auto z-50 border-t-2 border-[#1F3FBF] shadow-2xl">
-          <div className="flex items-center justify-between pb-2 border-b border-[#F6F8F5]/20 mb-2">
-            <span className="font-bold text-[#FFE45C]">DEBUG PANEL</span>
-            <button onClick={() => setDebugPanelOpen(false)} className="text-white hover:text-[#FFE45C]">
+        <div className="fixed bottom-0 right-0 w-96 max-h-80 bg-[#23272F] text-[#F5EBE0] p-4 font-mono text-xs overflow-y-auto z-50 border-t-2 border-[#1F3FBF] shadow-2xl">
+          <div className="flex items-center justify-between pb-2 border-b border-[#F5EBE0]/20 mb-2">
+            <span className="font-bold text-[#D5BDAF]">DEBUG PANEL</span>
+            <button onClick={() => setDebugPanelOpen(false)} className="text-white hover:text-[#D5BDAF]">
               <X className="w-4 h-4" />
             </button>
           </div>

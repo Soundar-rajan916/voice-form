@@ -39,7 +39,7 @@ export function ReceiptSlipPrint({ submission, formTitle, lang = 'ta' }) {
           {chars.map((c, i) => (
             <span
               key={`char-${i}`}
-              className="inline-flex items-center justify-center w-6 h-7 border border-[#23272F] text-sm font-bold font-mono bg-[#FCFCFA]"
+              className="inline-flex items-center justify-center w-6 h-7 border border-[#23272F] text-sm font-bold font-mono bg-[#F5EBE0]"
             >
               {c}
             </span>

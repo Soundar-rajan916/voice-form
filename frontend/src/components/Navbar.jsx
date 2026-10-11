@@ -19,16 +19,16 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
   const roleLabel = getRoleLabel(user.role);
 
   return (
-    <nav className="bg-[#F6F8F5] border-b border-[#DCE7E0] sticky top-0 z-40">
+    <nav className="bg-[#F5EBE0] border-b border-[#D6CCC2] sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Brand Header */}
           <div className="flex items-center space-x-6 sm:space-x-8">
             <Link to={user.role === 'admin' ? '/admin' : '/user'} className="flex flex-col group">
-              <span className="text-xl font-bold font-serif text-[#2A2E2C] tracking-tight group-hover:text-[#1F3FBF] transition-colors">
+              <span className="text-xl font-bold font-serif text-[#23272F] tracking-tight group-hover:text-[#1F3FBF] transition-colors">
                 {brandConfig.appName}
               </span>
-              <span className="text-xs text-[#2A2E2C]/75 font-sans-ui leading-none">
+              <span className="text-xs text-[#23272F]/75 font-sans-ui leading-none">
                 {brandConfig.officeName}
               </span>
             </Link>
@@ -41,8 +41,8 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
                     to="/admin"
                     className={`px-3 py-1.5 font-medium rounded transition-colors ${
                       location.pathname === '/admin'
-                        ? 'bg-[#1F3FBF] text-[#F6F8F5]'
-                        : 'text-[#2A2E2C] hover:bg-[#DCE7E0]'
+                        ? 'bg-[#1F3FBF] text-[#F5EBE0]'
+                        : 'text-[#23272F] hover:bg-[#E3D5CA]'
                     }`}
                   >
                     Forms
@@ -51,8 +51,8 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
                     to="/admin/builder/new"
                     className={`px-3 py-1.5 font-medium rounded transition-colors ${
                       location.pathname.startsWith('/admin/builder')
-                        ? 'bg-[#1F3FBF] text-[#F6F8F5]'
-                        : 'text-[#2A2E2C] hover:bg-[#DCE7E0]'
+                        ? 'bg-[#1F3FBF] text-[#F5EBE0]'
+                        : 'text-[#23272F] hover:bg-[#E3D5CA]'
                     }`}
                   >
                     Create Form
@@ -66,15 +66,15 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
                     to="/user"
                     className={`px-3 py-1.5 font-medium rounded transition-colors ${
                       location.pathname === '/user'
-                        ? 'bg-[#1F3FBF] text-[#F6F8F5]'
-                        : 'text-[#2A2E2C] hover:bg-[#DCE7E0]'
+                        ? 'bg-[#1F3FBF] text-[#F5EBE0]'
+                        : 'text-[#23272F] hover:bg-[#E3D5CA]'
                     }`}
                   >
                     Forms
                   </Link>
                   <a
                     href="#my-submissions"
-                    className="px-3 py-1.5 font-medium text-[#2A2E2C] hover:bg-[#DCE7E0] rounded transition-colors"
+                    className="px-3 py-1.5 font-medium text-[#23272F] hover:bg-[#E3D5CA] rounded transition-colors"
                   >
                     My Applications
                   </a>
@@ -87,14 +87,14 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
           <div className="flex items-center space-x-3 sm:space-x-4">
             {/* Language Segmented Control */}
             {setUiLang && (
-              <div className="flex items-center bg-[#DCE7E0] p-0.5 rounded text-xs font-sans-ui">
+              <div className="flex items-center bg-[#D6CCC2] p-0.5 rounded text-xs font-sans-ui">
                 <button
                   type="button"
                   onClick={() => setUiLang('en')}
                   className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
                     uiLang === 'en'
-                      ? 'bg-[#1F3FBF] text-[#F6F8F5] font-semibold'
-                      : 'text-[#2A2E2C] hover:text-[#1F3FBF]'
+                      ? 'bg-[#1F3FBF] text-[#F5EBE0] font-semibold'
+                      : 'text-[#23272F] hover:text-[#1F3FBF]'
                   }`}
                 >
                   English
@@ -105,8 +105,8 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
                   lang="ta"
                   className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
                     uiLang === 'ta'
-                      ? 'bg-[#1F3FBF] text-[#F6F8F5] font-semibold'
-                      : 'text-[#2A2E2C] hover:text-[#1F3FBF]'
+                      ? 'bg-[#1F3FBF] text-[#F5EBE0] font-semibold'
+                      : 'text-[#23272F] hover:text-[#1F3FBF]'
                   }`}
                 >
                   தமிழ்
@@ -116,8 +116,8 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
                   onClick={() => setUiLang('auto')}
                   className={`px-2.5 py-1 rounded transition-colors cursor-pointer ${
                     uiLang === 'auto'
-                      ? 'bg-[#1F3FBF] text-[#F6F8F5] font-semibold'
-                      : 'text-[#2A2E2C] hover:text-[#1F3FBF]'
+                      ? 'bg-[#1F3FBF] text-[#F5EBE0] font-semibold'
+                      : 'text-[#23272F] hover:text-[#1F3FBF]'
                   }`}
                 >
                   Auto
@@ -127,27 +127,27 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
 
             {/* Speech Toggle Labelled Switch */}
             {setSpeechEnabled && (
-              <label className="hidden sm:flex items-center space-x-2 text-xs text-[#2A2E2C]/75 cursor-pointer font-sans-ui select-none">
+              <label className="hidden sm:flex items-center space-x-2 text-xs text-[#23272F]/75 cursor-pointer font-sans-ui select-none">
                 <input
                   type="checkbox"
                   checked={speechEnabled}
                   onChange={(e) => setSpeechEnabled(e.target.checked)}
-                  className="rounded border-[#DCE7E0] text-[#1F3FBF] focus:ring-[#1F3FBF]"
+                  className="rounded border-[#D6CCC2] text-[#1F3FBF] focus:ring-[#1F3FBF]"
                 />
                 <span className="flex items-center space-x-1">
-                  {speechEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#1F3FBF]" /> : <VolumeX className="w-3.5 h-3.5 text-[#2A2E2C]/60" />}
+                  {speechEnabled ? <Volume2 className="w-3.5 h-3.5 text-[#1F3FBF]" /> : <VolumeX className="w-3.5 h-3.5 text-[#23272F]/60" />}
                   <span>Read questions aloud</span>
                 </span>
               </label>
             )}
 
             {/* Account Menu */}
-            <div className="flex items-center space-x-2 pl-2 border-l border-[#DCE7E0] font-sans-ui">
+            <div className="flex items-center space-x-2 pl-2 border-l border-[#D6CCC2] font-sans-ui">
               <div className="flex flex-col text-right">
-                <span className="text-xs font-semibold text-[#2A2E2C] truncate max-w-[120px] sm:max-w-[160px]">
+                <span className="text-xs font-semibold text-[#23272F] truncate max-w-[120px] sm:max-w-[160px]">
                   {user.email || user.username}
                 </span>
-                <span className="text-[11px] text-[#2A2E2C]/75">
+                <span className="text-[11px] text-[#23272F]/75">
                   {roleLabel}
                 </span>
               </div>
@@ -156,7 +156,7 @@ export const Navbar = ({ uiLang = 'en', setUiLang, speechEnabled = true, setSpee
                 onClick={handleLogout}
                 title="Log out"
                 aria-label="Log out"
-                className="p-2 text-[#2A2E2C]/75 hover:text-[#B3261E] rounded focus:outline-none focus:ring-2 focus:ring-[#1F3FBF] transition-colors cursor-pointer"
+                className="p-2 text-[#23272F]/75 hover:text-[#B3261E] rounded focus:outline-none focus:ring-2 focus:ring-[#1F3FBF] transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>

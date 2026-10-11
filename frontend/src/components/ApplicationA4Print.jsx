@@ -31,7 +31,7 @@ export function ApplicationA4Print({ submission, form, fields = [], answers = []
     : 'Consent recorded on initiation';
 
   return (
-    <div className="application-a4-copy bg-[#FCFCFA] text-[#23272F] p-8 max-w-4xl mx-auto border-2 border-[#23272F] font-sans-counter">
+    <div className="application-a4-copy bg-[#F5EBE0] text-[#23272F] p-8 max-w-4xl mx-auto border-2 border-[#23272F] font-sans-counter">
       {/* Top Header */}
       <div className="flex items-start justify-between border-b-2 border-[#23272F] pb-4 mb-4">
         <div>
@@ -50,7 +50,7 @@ export function ApplicationA4Print({ submission, form, fields = [], answers = []
       </div>
 
       {/* Reference Number & QR Section */}
-      <div className="flex items-center justify-between bg-[#E3E7EC]/50 p-4 border border-[#23272F] rounded mb-6">
+      <div className="flex items-center justify-between bg-[#D6CCC2]/50 p-4 border border-[#23272F] rounded mb-6">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#23272F]/80 mb-2">
             {lang === 'ta' ? 'விண்ணப்ப குறிப்பு எண் (Reference Number)' : 'Application Reference Number'}
@@ -81,7 +81,7 @@ export function ApplicationA4Print({ submission, form, fields = [], answers = []
       <div className="border border-[#23272F] rounded overflow-hidden mb-6">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-[#E3E7EC] border-b border-[#23272F] text-xs font-bold uppercase">
+            <tr className="bg-[#D6CCC2] border-b border-[#23272F] text-xs font-bold uppercase">
               <th className="p-3 w-12 text-center">#</th>
               <th className="p-3 w-1/2">{lang === 'ta' ? 'கேள்வி / விவரம்' : 'Question / Field'}</th>
               <th className="p-3">{lang === 'ta' ? 'விண்ணப்பதாரர் அளித்த பதில்' : 'Applicant Answer'}</th>
@@ -92,7 +92,7 @@ export function ApplicationA4Print({ submission, form, fields = [], answers = []
               const qText = lang === 'ta' && f.question_ta ? f.question_ta : (f.question_en || f.field_name);
               const ansVal = answersMap[f.id] || (lang === 'ta' ? '—' : '—');
               return (
-                <tr key={f.id || idx} className="border-b border-[#E3E7EC] hover:bg-[#FFE45C]/20 transition">
+                <tr key={f.id || idx} className="border-b border-[#D6CCC2] hover:bg-[#D5BDAF]/20 transition">
                   <td className="p-3 text-center text-xs font-mono text-[#23272F]/70">{idx + 1}</td>
                   <td className="p-3 text-sm font-medium text-[#23272F]">{qText}</td>
                   <td className="p-3 text-base pen-blue-text font-semibold">

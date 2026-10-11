@@ -27,14 +27,14 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
   };
 
   return (
-    <div className="w-full bg-[#E3E7EC] border-t-2 border-[#23272F] p-2 md:p-3 select-none transition-all shadow-lg">
+    <div className="w-full bg-[#D6CCC2] border-t-2 border-[#23272F] p-2 md:p-3 select-none transition-all shadow-lg">
       {/* Top Action Bar */}
       <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setCurrentLayout(currentLayout === 'ta' ? 'en' : 'ta')}
-            className="touch-target-64 px-4 py-2 bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] rounded flex items-center gap-2 hover:bg-[#FFE45C] active:scale-95 transition"
+            className="touch-target-64 px-4 py-2 bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] rounded flex items-center gap-2 hover:bg-[#D5BDAF] active:scale-95 transition"
             aria-label="Switch keyboard language"
           >
             <Globe className="w-5 h-5 text-[#5B2A86]" />
@@ -50,7 +50,7 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
             <button
               type="button"
               onClick={onClear}
-              className="touch-target-64 px-3 py-2 bg-[#FCFCFA] text-[#B3261E] font-bold border-2 border-[#B3261E] rounded hover:bg-red-50 active:scale-95 transition"
+              className="touch-target-64 px-3 py-2 bg-[#F5EBE0] text-[#B3261E] font-bold border-2 border-[#B3261E] rounded hover:bg-red-50 active:scale-95 transition"
             >
               Clear
             </button>
@@ -78,7 +78,7 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
                 key={n}
                 type="button"
                 onClick={() => handleKeyClick(n)}
-                className="touch-target-64 min-w-[52px] h-[58px] bg-[#FCFCFA] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#FFE45C] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
+                className="touch-target-64 min-w-[52px] h-[58px] bg-[#F5EBE0] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#D5BDAF] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
               >
                 {n}
               </button>
@@ -86,14 +86,14 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
           </div>
 
           {/* Vowels & Pulli */}
-          <div className="flex flex-wrap gap-1.5 justify-center bg-[#FCFCFA]/40 p-1.5 rounded border border-[#23272F]/20">
+          <div className="flex flex-wrap gap-1.5 justify-center bg-[#F5EBE0]/40 p-1.5 rounded border border-[#23272F]/20">
             <span className="w-full text-xs font-bold text-[#5B2A86] text-center mb-0.5">உயிரெழுத்துக்கள் (Vowels) & புள்ளி</span>
             {TAMIL_VOWELS.map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => handleKeyClick(v)}
-                className="touch-target-64 min-w-[54px] h-[58px] bg-[#FCFCFA] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#FFE45C] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center font-sans-counter"
+                className="touch-target-64 min-w-[54px] h-[58px] bg-[#F5EBE0] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#D5BDAF] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center font-sans-counter"
               >
                 {v}
               </button>
@@ -101,14 +101,14 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
           </div>
 
           {/* Vowel Signs (Combines with consonants or standalone) */}
-          <div className="flex flex-wrap gap-1.5 justify-center bg-[#FFE45C]/20 p-1.5 rounded border border-[#23272F]/20">
+          <div className="flex flex-wrap gap-1.5 justify-center bg-[#D5BDAF]/20 p-1.5 rounded border border-[#23272F]/20">
             <span className="w-full text-xs font-bold text-[#5B2A86] text-center mb-0.5">உயிர்மெய் குறியீடுகள் (Vowel Signs)</span>
             {TAMIL_SIGNS.map((s, idx) => (
               <button
                 key={`sign-${idx}`}
                 type="button"
                 onClick={() => handleKeyClick(s)}
-                className="touch-target-64 min-w-[54px] h-[58px] bg-[#FCFCFA] text-[#1F3FBF] text-2xl font-bold border border-[#23272F] rounded hover:bg-[#FFE45C] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center font-sans-counter"
+                className="touch-target-64 min-w-[54px] h-[58px] bg-[#F5EBE0] text-[#1F3FBF] text-2xl font-bold border border-[#23272F] rounded hover:bg-[#D5BDAF] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center font-sans-counter"
                 title={`Vowel Sign ${s}`}
               >
                 {s}
@@ -117,14 +117,14 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
           </div>
 
           {/* Consonants & Grantha */}
-          <div className="flex flex-wrap gap-1.5 justify-center bg-[#FCFCFA]/40 p-1.5 rounded border border-[#23272F]/20">
+          <div className="flex flex-wrap gap-1.5 justify-center bg-[#F5EBE0]/40 p-1.5 rounded border border-[#23272F]/20">
             <span className="w-full text-xs font-bold text-[#5B2A86] text-center mb-0.5">மெய்யெழுத்துக்கள் & கிரந்தம் (Consonants & Grantha)</span>
             {TAMIL_CONSONANTS.concat(TAMIL_GRANTHA).map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => handleKeyClick(c)}
-                className="touch-target-64 min-w-[54px] h-[58px] bg-[#FCFCFA] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#FFE45C] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center font-sans-counter"
+                className="touch-target-64 min-w-[54px] h-[58px] bg-[#F5EBE0] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#D5BDAF] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center font-sans-counter"
               >
                 {c}
               </button>
@@ -136,14 +136,14 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
             <button
               type="button"
               onClick={() => handleKeyClick(' ')}
-              className="touch-target-64 flex-1 max-w-md h-[58px] bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-[#FFE45C] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
+              className="touch-target-64 flex-1 max-w-md h-[58px] bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-[#D5BDAF] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
             >
               இடைவெளி (Space)
             </button>
             <button
               type="button"
               onClick={onBackspace}
-              className="touch-target-64 px-6 h-[58px] bg-[#FCFCFA] text-[#B3261E] font-bold border-2 border-[#B3261E] rounded hover:bg-red-50 active:scale-95 transition flex items-center justify-center gap-2"
+              className="touch-target-64 px-6 h-[58px] bg-[#F5EBE0] text-[#B3261E] font-bold border-2 border-[#B3261E] rounded hover:bg-red-50 active:scale-95 transition flex items-center justify-center gap-2"
               aria-label="Backspace"
             >
               <Delete className="w-6 h-6" />
@@ -161,7 +161,7 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
                   type="button"
                   onClick={() => setShift(!shift)}
                   className={`touch-target-64 px-4 h-[58px] font-bold border-2 border-[#23272F] rounded transition flex items-center justify-center ${
-                    shift ? 'bg-[#5B2A86] text-white' : 'bg-[#FCFCFA] text-[#23272F]'
+                    shift ? 'bg-[#5B2A86] text-white' : 'bg-[#F5EBE0] text-[#23272F]'
                   }`}
                 >
                   Shift
@@ -174,7 +174,7 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
                     key={char}
                     type="button"
                     onClick={() => handleKeyClick(disp)}
-                    className="touch-target-64 min-w-[50px] h-[58px] bg-[#FCFCFA] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#FFE45C] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
+                    className="touch-target-64 min-w-[50px] h-[58px] bg-[#F5EBE0] text-[#23272F] text-xl font-bold border border-[#23272F] rounded hover:bg-[#D5BDAF] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
                   >
                     {disp}
                   </button>
@@ -184,7 +184,7 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
                 <button
                   type="button"
                   onClick={onBackspace}
-                  className="touch-target-64 px-4 h-[58px] bg-[#FCFCFA] text-[#B3261E] font-bold border-2 border-[#B3261E] rounded hover:bg-red-50 active:scale-95 transition flex items-center justify-center gap-1"
+                  className="touch-target-64 px-4 h-[58px] bg-[#F5EBE0] text-[#B3261E] font-bold border-2 border-[#B3261E] rounded hover:bg-red-50 active:scale-95 transition flex items-center justify-center gap-1"
                   aria-label="Backspace"
                 >
                   <Delete className="w-5 h-5" />
@@ -198,7 +198,7 @@ export default function TamilVirtualKeyboard({ onInsert, onBackspace, onClear, o
             <button
               type="button"
               onClick={() => handleKeyClick(' ')}
-              className="touch-target-64 flex-1 max-w-lg h-[58px] bg-[#FCFCFA] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-[#FFE45C] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
+              className="touch-target-64 flex-1 max-w-lg h-[58px] bg-[#F5EBE0] text-[#23272F] font-bold border-2 border-[#23272F] rounded hover:bg-[#D5BDAF] active:bg-[#5B2A86] active:text-white transition flex items-center justify-center"
             >
               Space
             </button>

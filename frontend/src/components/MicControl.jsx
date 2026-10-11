@@ -30,8 +30,8 @@ export const MicControl = ({
           disabled={isDisabled || permissionState === 'denied'}
           className={`w-[88px] h-[88px] rounded-full flex items-center justify-center transition-colors border-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed focus:ring-2 focus:ring-[#1F3FBF] focus:outline-none ${
             isListening || vadState === 'speech_detected'
-              ? 'bg-[#1F3FBF] border-[#1F3FBF] text-[#F6F8F5]'
-              : 'bg-[#F6F8F5] border-[#2A2E2C] text-[#2A2E2C] hover:bg-[#DCE7E0]'
+              ? 'bg-[#1F3FBF] border-[#1F3FBF] text-[#F5EBE0]'
+              : 'bg-[#F5EBE0] border-[#23272F] text-[#23272F] hover:bg-[#E3D5CA]'
           }`}
           style={{
             outline: isListening ? 'calc(var(--mic-level, 0) * 8px + 2px) solid rgba(31, 63, 191, 0.4)' : 'none'
@@ -49,7 +49,7 @@ export const MicControl = ({
 
       {/* Plain Text Status */}
       <div className="flex flex-col font-sans-ui">
-        <span className="text-base font-semibold text-[#2A2E2C]">
+        <span className="text-base font-semibold text-[#23272F]">
           {getStatusText()}
         </span>
         {permissionState === 'denied' && (
