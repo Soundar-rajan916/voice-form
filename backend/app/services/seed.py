@@ -503,6 +503,301 @@ SAMPLE_FORMS = [
                 "question_ta": "பிரச்சனை மற்றும் அதன் சரியான இடத்தை விவரிக்கவும்."
             }
         ]
+    },
+    {
+        "title": "Nativity certificate request",
+        "description": "Application to obtain official proof of continuous residence and nativity in the state/district for admission and employment.",
+        "fields": [
+            {
+                "field_name": "applicant_name",
+                "data_type": "String",
+                "description": "full name of the applicant",
+                "required": True,
+                "question_en": "What is the applicant's full name?",
+                "question_ta": "விண்ணப்பதாரரின் முழு பெயர் என்ன?"
+            },
+            {
+                "field_name": "father_or_spouse_name",
+                "data_type": "String",
+                "description": "father or spouse name of the applicant",
+                "required": True,
+                "question_en": "What is your father or spouse's name?",
+                "question_ta": "உங்கள் தந்தை அல்லது கணவரின் பெயர் என்ன?"
+            },
+            {
+                "field_name": "date_of_birth",
+                "data_type": "Date",
+                "description": "date of birth in YYYY-MM-DD format",
+                "required": True,
+                "question_en": "What is your date of birth?",
+                "question_ta": "உங்கள் பிறந்த தேதி என்ன?"
+            },
+            {
+                "field_name": "mobile_number",
+                "data_type": "Phone",
+                "description": "mobile contact number",
+                "required": True,
+                "question_en": "What is your mobile phone number?",
+                "question_ta": "உங்கள் கைபேசி எண் என்ன?"
+            },
+            {
+                "field_name": "residential_address",
+                "data_type": "String",
+                "description": "complete residential address with door number and street",
+                "required": True,
+                "question_en": "What is your current residential address?",
+                "question_ta": "உங்கள் தற்போதைய குடியிருப்பு முகவரி என்ன?"
+            },
+            {
+                "field_name": "district",
+                "data_type": "String",
+                "description": "revenue district of continuous residence",
+                "required": True,
+                "question_en": "Which district do you reside in?",
+                "question_ta": "நீங்கள் எந்த மாவட்டத்தில் வசிக்கிறீர்கள்?"
+            },
+            {
+                "field_name": "taluk",
+                "data_type": "String",
+                "description": "revenue taluk of continuous residence",
+                "required": True,
+                "question_en": "Which taluk do you belong to?",
+                "question_ta": "நீங்கள் எந்த வட்டத்தைச் சேர்ந்தவர்?"
+            },
+            {
+                "field_name": "years_of_residence",
+                "data_type": "Number",
+                "description": "number of consecutive years residing at the given address",
+                "required": True,
+                "question_en": "How many years have you been continuously residing in this district?",
+                "question_ta": "இந்த மாவட்டத்தில் தொடர்ந்து எத்தனை வருடங்களாக வசித்து வருகிறீர்கள்?"
+            },
+            {
+                "field_name": "purpose_of_certificate",
+                "data_type": "Choice",
+                "description": "reason for requesting the nativity certificate",
+                "required": True,
+                "choices": ["College / University Admission", "Government Employment", "Competitive Exam", "Other Public Scheme"],
+                "question_en": "What is the purpose of requesting this nativity certificate?",
+                "question_ta": "இந்த இருப்பிடச் சான்றிதழைப் பெறுவதற்கான நோக்கம் என்ன?"
+            }
+        ]
+    },
+    {
+        "title": "Destitute women welfare pension application",
+        "description": "Monthly social security pension support for deserted, widowed, and destitute women without independent income.",
+        "fields": [
+            {
+                "field_name": "applicant_name",
+                "data_type": "String",
+                "description": "full name of the female applicant",
+                "required": True,
+                "question_en": "What is your full name?",
+                "question_ta": "உங்கள் முழு பெயர் என்ன?"
+            },
+            {
+                "field_name": "age",
+                "data_type": "Number",
+                "description": "age of the applicant in years",
+                "required": True,
+                "question_en": "What is your current age in years?",
+                "question_ta": "உங்கள் தற்போதைய வயது என்ன?"
+            },
+            {
+                "field_name": "marital_category",
+                "data_type": "Choice",
+                "description": "applicant marital and welfare category",
+                "required": True,
+                "choices": ["Widow", "Deserted Wife", "Destitute Unmarried", "Divorced"],
+                "question_en": "Which category best describes your marital status?",
+                "question_ta": "உங்கள் திருமண நிலை எந்த வகையைச் சார்ந்தது?"
+            },
+            {
+                "field_name": "mobile_number",
+                "data_type": "Phone",
+                "description": "contact phone number for pension communications",
+                "required": True,
+                "question_en": "What is your mobile number?",
+                "question_ta": "உங்கள் கைபேசி எண் என்ன?"
+            },
+            {
+                "field_name": "address",
+                "data_type": "String",
+                "description": "current residential address",
+                "required": True,
+                "question_en": "What is your residential address?",
+                "question_ta": "உங்கள் குடியிருப்பு முகவரி என்ன?"
+            },
+            {
+                "field_name": "district",
+                "data_type": "String",
+                "description": "revenue district of residence",
+                "required": True,
+                "question_en": "Which district do you live in?",
+                "question_ta": "நீங்கள் எந்த மாவட்டத்தில் வசிக்கிறீர்கள்?"
+            },
+            {
+                "field_name": "annual_family_income",
+                "data_type": "Number",
+                "description": "total annual household income in rupees",
+                "required": True,
+                "question_en": "What is your annual income in rupees?",
+                "question_ta": "உங்கள் ஆண்டு வருமானம் ரூபாயில் எவ்வளவு?"
+            },
+            {
+                "field_name": "lives_independently",
+                "data_type": "Boolean",
+                "description": "whether the applicant lives without independent financial support",
+                "required": True,
+                "question_en": "Do you live without any other financial support from family?",
+                "question_ta": "குடும்பத்தினரின் நிதி உதவி இன்றி தனியாக வசிக்கிறீர்களா?"
+            }
+        ]
+    },
+    {
+        "title": "Farmer crop damage relief assistance",
+        "description": "Agricultural compensation subsidy for farmers whose cultivated crops suffered damage due to drought, unseasonal rains, or pest attack.",
+        "fields": [
+            {
+                "field_name": "farmer_name",
+                "data_type": "String",
+                "description": "full name of the farmer applicant",
+                "required": True,
+                "question_en": "What is the farmer's full name?",
+                "question_ta": "விவசாயியின் முழு பெயர் என்ன?"
+            },
+            {
+                "field_name": "mobile_number",
+                "data_type": "Phone",
+                "description": "contact mobile number of the farmer",
+                "required": True,
+                "question_en": "What is your mobile number?",
+                "question_ta": "உங்கள் கைபேசி எண் என்ன?"
+            },
+            {
+                "field_name": "village",
+                "data_type": "String",
+                "description": "revenue village where cultivated land is situated",
+                "required": True,
+                "question_en": "Which village is your farmland located in?",
+                "question_ta": "உங்கள் விவசாய நிலம் எந்த கிராமத்தில் அமைந்துள்ளது?"
+            },
+            {
+                "field_name": "taluk",
+                "data_type": "String",
+                "description": "revenue taluk of the farmland",
+                "required": True,
+                "question_en": "Which taluk does the farmland belong to?",
+                "question_ta": "விவசாய நிலம் எந்த வட்டத்தைச் சார்ந்தது?"
+            },
+            {
+                "field_name": "district",
+                "data_type": "String",
+                "description": "revenue district of the farmland",
+                "required": True,
+                "question_en": "Which district is your farmland in?",
+                "question_ta": "உங்கள் விவசாய நிலம் எந்த மாவட்டத்தில் உள்ளது?"
+            },
+            {
+                "field_name": "crop_name",
+                "data_type": "Choice",
+                "description": "name of the affected crop",
+                "required": True,
+                "choices": ["Paddy", "Sugarcane", "Cotton", "Millets & Pulses", "Vegetables", "Banana & Horticulture"],
+                "question_en": "Which crop suffered damage?",
+                "question_ta": "பாதிக்கப்பட்ட பயிர் எது?"
+            },
+            {
+                "field_name": "affected_area_acres",
+                "data_type": "Number",
+                "description": "damaged crop land area in acres",
+                "required": True,
+                "question_en": "How many acres of cultivated land were damaged?",
+                "question_ta": "சேதமடைந்த பயிர் பரப்பு எத்தனை ஏக்கர்?"
+            },
+            {
+                "field_name": "calamity_cause",
+                "data_type": "Choice",
+                "description": "cause of crop failure or loss",
+                "required": True,
+                "choices": ["Excess Rainfall / Flooding", "Drought / Lack of Water", "Pest / Disease Attack", "Cyclone / Wind Storm"],
+                "question_en": "What was the cause of the crop damage?",
+                "question_ta": "பயிர் சேதத்திற்கான காரணம் என்ன?"
+            }
+        ]
+    },
+    {
+        "title": "Street vendor registration",
+        "description": "Municipal registration for urban and town street vendors to obtain official certificate of vending and access micro-credit assistance.",
+        "fields": [
+            {
+                "field_name": "vendor_name",
+                "data_type": "String",
+                "description": "full name of the street vendor",
+                "required": True,
+                "question_en": "What is your full name?",
+                "question_ta": "உங்கள் முழு பெயர் என்ன?"
+            },
+            {
+                "field_name": "date_of_birth",
+                "data_type": "Date",
+                "description": "date of birth in YYYY-MM-DD format",
+                "required": True,
+                "question_en": "What is your date of birth?",
+                "question_ta": "உங்கள் பிறந்த தேதி என்ன?"
+            },
+            {
+                "field_name": "gender",
+                "data_type": "Choice",
+                "description": "gender of the applicant",
+                "required": True,
+                "choices": ["Male", "Female", "Transgender"],
+                "question_en": "What is your gender?",
+                "question_ta": "உங்கள் பாலினம் என்ன?"
+            },
+            {
+                "field_name": "mobile_number",
+                "data_type": "Phone",
+                "description": "contact phone number",
+                "required": True,
+                "question_en": "What is your mobile number?",
+                "question_ta": "உங்கள் கைபேசி எண் என்ன?"
+            },
+            {
+                "field_name": "vending_location_ward",
+                "data_type": "String",
+                "description": "ward number, street or market place where vending is conducted",
+                "required": True,
+                "question_en": "At which street, market, or ward do you conduct your business?",
+                "question_ta": "நீங்கள் எந்த தெரு, சந்தை அல்லது வார்டில் வியாபாரம் செய்கிறீர்கள்?"
+            },
+            {
+                "field_name": "vending_type",
+                "data_type": "Choice",
+                "description": "format or style of street vending",
+                "required": True,
+                "choices": ["Stationary Stall", "Mobile Push Cart", "Pedestrian / Basket Vendor", "Weekly Haat / Market Hawker"],
+                "question_en": "What is your mode of vending?",
+                "question_ta": "உங்கள் வியாபார முறை எது?"
+            },
+            {
+                "field_name": "goods_category",
+                "data_type": "Choice",
+                "description": "primary trade or category of items sold",
+                "required": True,
+                "choices": ["Fruits & Vegetables", "Cooked Food & Snacks", "Flowers & Puja Items", "Clothes & Footwear", "Household Utensils", "Other General Items"],
+                "question_en": "What items or products do you sell?",
+                "question_ta": "நீங்கள் எந்த பொருட்களை விற்பனை செய்கிறீர்கள்?"
+            },
+            {
+                "field_name": "years_in_vending",
+                "data_type": "Number",
+                "description": "number of years operating as a vendor in this town",
+                "required": True,
+                "question_en": "How many years have you been vending in this area?",
+                "question_ta": "இப்பகுதியில் எத்தனை ஆண்டுகளாக வியாபாரம் செய்து வருகிறீர்கள்?"
+            }
+        ]
     }
 ]
 
