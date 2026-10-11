@@ -1,23 +1,19 @@
-/* 1. Display & Heading Font: Catamaran */
-@import "@fontsource/catamaran/400.css";
-@import "@fontsource/catamaran/500.css";
-@import "@fontsource/catamaran/600.css";
-@import "@fontsource/catamaran/700.css";
-@import "@fontsource/catamaran/800.css";
+/* 1. Display & Heading Font: Khand */
+@import "@fontsource/khand/400.css";
+@import "@fontsource/khand/500.css";
+@import "@fontsource/khand/600.css";
+@import "@fontsource/khand/700.css";
 
-/* 2. Subheading & Accent Font: Cormorant Infant */
-@import "@fontsource/cormorant-infant/400.css";
-@import "@fontsource/cormorant-infant/400-italic.css";
-@import "@fontsource/cormorant-infant/600.css";
-@import "@fontsource/cormorant-infant/600-italic.css";
-@import "@fontsource/cormorant-infant/700.css";
-@import "@fontsource/cormorant-infant/700-italic.css";
+/* 2. Subheading & Accent Font: Nobile */
+@import "@fontsource/nobile/400.css";
+@import "@fontsource/nobile/500.css";
+@import "@fontsource/nobile/700.css";
 
-/* 3. Body & UI Font: Hind Siliguri */
-@import "@fontsource/hind-siliguri/400.css";
-@import "@fontsource/hind-siliguri/500.css";
-@import "@fontsource/hind-siliguri/600.css";
-@import "@fontsource/hind-siliguri/700.css";
+/* 3. Body & UI Font: Anaheim */
+@import "@fontsource/anaheim/400.css";
+@import "@fontsource/anaheim/500.css";
+@import "@fontsource/anaheim/600.css";
+@import "@fontsource/anaheim/700.css";
 
 /* Tamil Script Fallback */
 @import "@fontsource/noto-serif-tamil/400.css";
@@ -26,12 +22,21 @@
 
 @import "tailwindcss";
 
+@theme {
+  --font-heading: 'Khand', 'Noto Serif Tamil', sans-serif;
+  --font-subheading: 'Nobile', 'Noto Serif Tamil', sans-serif;
+  --font-body: 'Anaheim', 'Noto Serif Tamil', sans-serif;
+  --font-serif: 'Khand', 'Noto Serif Tamil', sans-serif;
+  --font-sans: 'Anaheim', 'Noto Serif Tamil', sans-serif;
+  --font-sans-ui: 'Anaheim', 'Noto Serif Tamil', sans-serif;
+}
+
 @layer base {
   :root {
     /* Font Family Stacks */
-    --font-heading: 'Catamaran', 'Noto Serif Tamil', sans-serif;
-    --font-subheading: 'Cormorant Infant', 'Noto Serif Tamil', serif;
-    --font-body: 'Hind Siliguri', sans-serif;
+    --font-heading: 'Khand', 'Noto Serif Tamil', sans-serif;
+    --font-subheading: 'Nobile', 'Noto Serif Tamil', sans-serif;
+    --font-body: 'Anaheim', 'Noto Serif Tamil', sans-serif;
 
     /* Citizen Desk Palette - Counter at a service office */
     --color-sheet: #FCFCFA;          /* Form white */
@@ -60,7 +65,7 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-    letter-spacing: -0.01em;
+    letter-spacing: 0.01em;
   }
 
   /* Tamil enlarged about 6% with line-height at least 1.6 */
@@ -84,19 +89,22 @@
 
 /* Font Pairing Utility Classes */
 .font-heading,
-.font-catamaran,
+.font-khand,
+.font-serif,
 .font-serif-printed {
   font-family: var(--font-heading) !important;
 }
 
 .font-subheading,
-.font-cormorant,
+.font-nobile,
 .font-editorial {
   font-family: var(--font-subheading) !important;
 }
 
 .font-body,
-.font-hind,
+.font-anaheim,
+.font-sans,
+.font-sans-ui,
 .font-sans-counter {
   font-family: var(--font-body) !important;
 }
