@@ -175,7 +175,7 @@ venv\Scripts\python -c "import os, tempfile; from alembic.config import Config; 
 ## 6. Final Status & Summary
 
 - **Branch**: `chore/remove-dead-code`
-- **Total Commits**: 6 clean, atomic commits
+- **Total Commits**: 7 clean, atomic commits (6 removal commits + 1 SPA proxy bypass fix)
 - **Tests**: 58 / 58 passing (0 failures, 0 regressions)
 - **Alembic**: Migrations up-to-date and upgrade verified
 - **Behavior**: Exactly identical to baseline with zero functional modifications.
