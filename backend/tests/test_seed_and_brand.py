@@ -12,16 +12,15 @@ async def test_seed_sample_forms_creates_three_forms(async_db_session):
     published_forms = res.scalars().all()
 
     form_titles = [f.title for f in published_forms]
-    assert "Income certificate request" in form_titles
-    assert "Scholarship application" in form_titles
-    assert "Old age pension application" in form_titles
+    for sf in SAMPLE_FORMS:
+        assert sf["title"] in form_titles
 
     # Test idempotency (running again should not duplicate)
     await seed_sample_forms(async_db_session)
 
     res2 = await async_db_session.execute(select(Form).where(Form.status == "published"))
     published_forms_2 = res2.scalars().all()
-    assert len(published_forms_2) == 3
+    assert len(published_forms_2) == len(SAMPLE_FORMS)
 
 @pytest.mark.asyncio
 async def test_seed_form_fields_and_no_id_fields(async_db_session):

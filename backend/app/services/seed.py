@@ -274,6 +274,235 @@ SAMPLE_FORMS = [
                 "question_ta": "உங்கள் வீட்டில் எத்தனை பேர் வசிக்கிறார்கள்?"
             }
         ]
+    },
+    {
+        "title": "Community certificate request",
+        "description": "Application for obtaining official community / caste certificate for educational admissions and welfare schemes.",
+        "fields": [
+            {
+                "field_name": "applicant_name",
+                "data_type": "String",
+                "description": "full name of the applicant",
+                "required": True,
+                "question_en": "What is the applicant's full name?",
+                "question_ta": "விண்ணப்பதாரரின் முழு பெயர் என்ன?"
+            },
+            {
+                "field_name": "father_or_guardian_name",
+                "data_type": "String",
+                "description": "father or guardian name",
+                "required": True,
+                "question_en": "What is your father or guardian's name?",
+                "question_ta": "தந்தை அல்லது பாதுகாவலரின் பெயர் என்ன?"
+            },
+            {
+                "field_name": "date_of_birth",
+                "data_type": "Date",
+                "description": "date of birth in YYYY-MM-DD format",
+                "required": True,
+                "question_en": "What is your date of birth?",
+                "question_ta": "உங்கள் பிறந்த தேதி என்ன?"
+            },
+            {
+                "field_name": "gender",
+                "data_type": "Choice",
+                "description": "gender of the applicant",
+                "required": True,
+                "choices": ["Male", "Female", "Transgender"],
+                "question_en": "What is your gender?",
+                "question_ta": "உங்கள் பாலினம் என்ன?"
+            },
+            {
+                "field_name": "mobile_number",
+                "data_type": "Phone",
+                "description": "applicant mobile contact number",
+                "required": True,
+                "question_en": "What is your mobile contact number?",
+                "question_ta": "உங்கள் கைபேசி எண் என்ன?"
+            },
+            {
+                "field_name": "address",
+                "data_type": "String",
+                "description": "residential address including door number and street",
+                "required": True,
+                "question_en": "What is your complete residential address?",
+                "question_ta": "உங்கள் முழு குடியிருப்பு முகவரி என்ன?"
+            },
+            {
+                "field_name": "district",
+                "data_type": "String",
+                "description": "revenue district of residence",
+                "required": True,
+                "question_en": "Which district do you reside in?",
+                "question_ta": "நீங்கள் எந்த மாவட்டத்தில் வசிக்கிறீர்கள்?"
+            },
+            {
+                "field_name": "taluk",
+                "data_type": "String",
+                "description": "revenue taluk of residence",
+                "required": True,
+                "question_en": "Which taluk do you belong to?",
+                "question_ta": "நீங்கள் எந்த வட்டத்தை சேர்ந்தவர்?"
+            },
+            {
+                "field_name": "community_category",
+                "data_type": "Choice",
+                "description": "community category of the applicant",
+                "required": True,
+                "choices": ["BC", "MBC/DNC", "SC", "ST", "General"],
+                "question_en": "Which community category do you belong to?",
+                "question_ta": "நீங்கள் எந்த சமூக பிரிவைச் சேர்ந்தவர்?"
+            },
+            {
+                "field_name": "caste_subsect",
+                "data_type": "String",
+                "description": "sub-caste or sect name",
+                "required": True,
+                "question_en": "What is your specific caste or subsect name?",
+                "question_ta": "உங்கள் குறிப்பிட்ட சாதி அல்லது உட்பிரிவு பெயர் என்ன?"
+            }
+        ]
+    },
+    {
+        "title": "First graduate certificate application",
+        "description": "Fee concession assistance for higher education candidates where no family member is a graduate.",
+        "fields": [
+            {
+                "field_name": "student_name",
+                "data_type": "String",
+                "description": "full name of the student applicant",
+                "required": True,
+                "question_en": "What is the student applicant's full name?",
+                "question_ta": "விண்ணப்பதாரர் மாணவரின் முழு பெயர் என்ன?"
+            },
+            {
+                "field_name": "father_name",
+                "data_type": "String",
+                "description": "father's name of the student",
+                "required": True,
+                "question_en": "What is your father's name?",
+                "question_ta": "உங்கள் தந்தையின் பெயர் என்ன?"
+            },
+            {
+                "field_name": "mother_name",
+                "data_type": "String",
+                "description": "mother's name of the student",
+                "required": True,
+                "question_en": "What is your mother's name?",
+                "question_ta": "உங்கள் தாயின் பெயர் என்ன?"
+            },
+            {
+                "field_name": "date_of_birth",
+                "data_type": "Date",
+                "description": "date of birth in YYYY-MM-DD format",
+                "required": True,
+                "question_en": "What is your date of birth?",
+                "question_ta": "உங்கள் பிறந்த தேதி என்ன?"
+            },
+            {
+                "field_name": "mobile_number",
+                "data_type": "Phone",
+                "description": "contact mobile number",
+                "required": True,
+                "question_en": "What is your contact mobile phone number?",
+                "question_ta": "உங்கள் கைபேசி எண் என்ன?"
+            },
+            {
+                "field_name": "address",
+                "data_type": "String",
+                "description": "permanent address of the family",
+                "required": True,
+                "question_en": "What is your permanent residential address?",
+                "question_ta": "உங்கள் நிரந்தர குடியிருப்பு முகவரி என்ன?"
+            },
+            {
+                "field_name": "district",
+                "data_type": "String",
+                "description": "home district",
+                "required": True,
+                "question_en": "Which is your home district?",
+                "question_ta": "உங்கள் சொந்த மாவட்டம் எது?"
+            },
+            {
+                "field_name": "college_name",
+                "data_type": "String",
+                "description": "name of the college or university admitted to",
+                "required": True,
+                "question_en": "Which college or university have you joined or applied to?",
+                "question_ta": "நீங்கள் சேர்ந்துள்ள அல்லது விண்ணப்பித்துள்ள கல்லூரி பெயர் என்ன?"
+            },
+            {
+                "field_name": "degree_course",
+                "data_type": "String",
+                "description": "degree program or course enrolled in",
+                "required": True,
+                "question_en": "Which degree course are you pursuing?",
+                "question_ta": "நீங்கள் படிக்கும் பட்டப்படிப்பு எது?"
+            },
+            {
+                "field_name": "family_members_count",
+                "data_type": "Number",
+                "description": "total count of family members",
+                "required": True,
+                "question_en": "How many members are in your immediate family?",
+                "question_ta": "உங்கள் குடும்பத்தில் மொத்தம் எத்தனை உறுப்பினர்கள் உள்ளனர்?"
+            }
+        ]
+    },
+    {
+        "title": "Public grievance petition",
+        "description": "Submit civic complaints regarding water, roads, street lighting, sanitation, or electricity to municipal authorities.",
+        "fields": [
+            {
+                "field_name": "petitioner_name",
+                "data_type": "String",
+                "description": "full name of the citizen submitting grievance",
+                "required": True,
+                "question_en": "What is your full name?",
+                "question_ta": "உங்கள் முழு பெயர் என்ன?"
+            },
+            {
+                "field_name": "mobile_number",
+                "data_type": "Phone",
+                "description": "contact phone number for updates",
+                "required": True,
+                "question_en": "What is your mobile number for SMS status updates?",
+                "question_ta": "நிலை தகவல் பெற உங்கள் கைபேசி எண் என்ன?"
+            },
+            {
+                "field_name": "email",
+                "data_type": "Email",
+                "description": "email address for official correspondence",
+                "required": True,
+                "question_en": "What is your email address?",
+                "question_ta": "உங்கள் மின்னஞ்சல் முகவரி என்ன?"
+            },
+            {
+                "field_name": "locality_or_ward",
+                "data_type": "String",
+                "description": "street, village, ward or municipality locality",
+                "required": True,
+                "question_en": "Which locality, village, or ward does this grievance pertain to?",
+                "question_ta": "இந்த குறை எந்த பகுதி, கிராமம் அல்லது வார்டை சார்ந்தது?"
+            },
+            {
+                "field_name": "grievance_category",
+                "data_type": "Choice",
+                "description": "category of the grievance",
+                "required": True,
+                "choices": ["Drinking water", "Road repair", "Street lighting", "Sanitation & Waste", "Electricity", "Other civic issue"],
+                "question_en": "Which category best describes your grievance?",
+                "question_ta": "உங்கள் குறை எந்த வகையைச் சேர்ந்தது?"
+            },
+            {
+                "field_name": "grievance_description",
+                "data_type": "String",
+                "description": "detailed description of the issue or complaint",
+                "required": True,
+                "question_en": "Please describe the problem and its exact location.",
+                "question_ta": "பிரச்சனை மற்றும் அதன் சரியான இடத்தை விவரிக்கவும்."
+            }
+        ]
     }
 ]
 
