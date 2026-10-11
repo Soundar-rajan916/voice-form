@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 // Helper to encode Float32Array PCM samples to 16kHz Mono WAV binary ArrayBuffer
-export function encodeWAV(samples, sampleRate = 16000) {
+function encodeWAV(samples, sampleRate = 16000) {
   const buffer = new ArrayBuffer(44 + samples.length * 2);
   const view = new DataView(buffer);
 

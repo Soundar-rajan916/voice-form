@@ -1,6 +1,6 @@
 const API_BASE = '';
 
-export async function apiRequest(endpoint, options = {}) {
+async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem('voiceform_token');
   const headers = {
     'Content-Type': 'application/json',
