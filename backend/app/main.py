@@ -9,7 +9,7 @@ from app.config import settings
 from app.db import engine, Base, AsyncSessionLocal
 from app.models import User
 from app.security import hash_password
-from app.routers import auth, admin_forms, forms, submissions, ws, documents, admin_devices, kiosk_desk
+from app.routers import auth, admin_forms, forms, submissions, ws, documents, kiosk_desk
 from app.services.extraction import extract_answer
 from app.services.vision_reader import check_vision_model_availability
 from app.services.seed import seed_sample_forms
@@ -150,7 +150,6 @@ app.include_router(forms.router)
 app.include_router(submissions.router)
 app.include_router(ws.router)
 app.include_router(documents.router)
-app.include_router(admin_devices.router)
 app.include_router(kiosk_desk.router)
 
 @app.get("/")
