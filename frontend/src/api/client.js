@@ -67,6 +67,12 @@ export const adminFormsApi = {
     apiRequest(`/admin/forms/${id}/archive`, {
       method: 'POST',
     }),
+  unarchive: (id, targetStatus) => {
+    const query = targetStatus ? `?target_status=${targetStatus}` : '';
+    return apiRequest(`/admin/forms/${id}/unarchive${query}`, {
+      method: 'POST',
+    });
+  },
   delete: (id) =>
     apiRequest(`/admin/forms/${id}`, {
       method: 'DELETE',

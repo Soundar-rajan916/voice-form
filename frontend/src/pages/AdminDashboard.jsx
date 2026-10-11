@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { adminFormsApi } from '../api/client';
 import { Navbar } from '../components/Navbar';
 import {
-  Plus, FileText, CheckCircle2, Archive, Edit3, Eye, Loader2, RefreshCw, AlertCircle, Trash2
+  Plus, FileText, CheckCircle2, Archive, ArchiveRestore, Edit3, Eye, Loader2, RefreshCw, AlertCircle, Trash2
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -49,6 +49,19 @@ export const AdminDashboard = () => {
       await loadForms();
     } catch (err) {
       alert(err.message || 'Failed to archive form');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUnarchive = async (formId) => {
+    if (!window.confirm('Are you sure you want to unarchive this form?')) return;
+    setActionLoading(formId);
+    try {
+      await adminFormsApi.unarchive(formId);
+      await loadForms();
+    } catch (err) {
+      alert(err.message || 'Failed to unarchive form');
     } finally {
       setActionLoading(null);
     }
@@ -202,7 +215,17 @@ export const AdminDashboard = () => {
                         </button>
                       )}
 
-                      {!isArchived && (
+                      {isArchived ? (
+                        <button
+                          type="button"
+                          onClick={() => handleUnarchive(form.id)}
+                          disabled={actionLoading === form.id}
+                          className="p-1.5 text-[#1F3FBF] hover:bg-[#1F3FBF]/10 rounded transition-colors cursor-pointer"
+                          title="Unarchive form"
+                        >
+                          <ArchiveRestore className="w-4 h-4" />
+                        </button>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => handleArchive(form.id)}

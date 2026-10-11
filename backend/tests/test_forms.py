@@ -140,3 +140,35 @@ async def test_other_user_submission_returns_404(
     # User 2 tries to delete S1 -> must get 404 (NOT 403)
     del_res = await client.delete(f"/submissions/{s1_id}", headers=user2_headers)
     assert del_res.status_code == 404
+
+@pytest.mark.asyncio
+async def test_admin_archive_and_unarchive_form(client: AsyncClient, admin_token_headers):
+    # 1. Create and publish form
+    payload = {
+        "title": "Archive Test Form",
+        "description": "Test archiving and unarchiving",
+        "fields": [{"field_name": "name", "data_type": "String", "description": "Applicant Name"}]
+    }
+    form_res = await client.post("/admin/forms", json=payload, headers=admin_token_headers)
+    assert form_res.status_code == 201
+    form_id = form_res.json()["id"]
+
+    pub_res = await client.post(f"/admin/forms/{form_id}/publish", headers=admin_token_headers)
+    assert pub_res.status_code == 200
+    assert pub_res.json()["status"] == "published"
+
+    # 2. Archive form
+    arch_res = await client.post(f"/admin/forms/{form_id}/archive", headers=admin_token_headers)
+    assert arch_res.status_code == 200
+    assert arch_res.json()["status"] == "archived"
+
+    # 3. Unarchive form (restores to published since it has fields)
+    unarch_res = await client.post(f"/admin/forms/{form_id}/unarchive", headers=admin_token_headers)
+    assert unarch_res.status_code == 200
+    assert unarch_res.json()["status"] == "published"
+
+    # 4. Archive again and unarchive explicitly as draft
+    await client.post(f"/admin/forms/{form_id}/archive", headers=admin_token_headers)
+    unarch_draft = await client.post(f"/admin/forms/{form_id}/unarchive?target_status=draft", headers=admin_token_headers)
+    assert unarch_draft.status_code == 200
+    assert unarch_draft.json()["status"] == "draft"

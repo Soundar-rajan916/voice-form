@@ -356,6 +356,52 @@ async def archive_form(
         current_version=FormVersionResponse.model_validate(latest_version) if latest_version else None
     )
 
+@router.post("/{form_id}/unarchive", response_model=FormDetailResponse)
+async def unarchive_form(
+    form_id: int,
+    target_status: Optional[str] = Query(None, description="Status to restore to ('published' or 'draft')"),
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Form)
+        .options(selectinload(Form.versions).selectinload(FormVersion.fields))
+        .where(Form.id == form_id)
+        .execution_options(populate_existing=True)
+    )
+    form = result.scalar_one_or_none()
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+
+    if target_status in ("published", "draft"):
+        form.status = target_status
+    else:
+        has_fields = bool(form.versions and form.versions[-1].fields)
+        form.status = "published" if has_fields else "draft"
+
+    await db.commit()
+
+    res = await db.execute(
+        select(Form)
+        .options(selectinload(Form.versions).selectinload(FormVersion.fields))
+        .where(Form.id == form_id)
+        .execution_options(populate_existing=True)
+    )
+    unarch_form = res.scalar_one()
+
+    latest_version = unarch_form.versions[-1] if unarch_form.versions else None
+    return FormDetailResponse(
+        id=unarch_form.id,
+        title=unarch_form.title,
+        description=unarch_form.description,
+        status=unarch_form.status,
+        allow_document_upload=unarch_form.allow_document_upload,
+        created_by=unarch_form.created_by,
+        created_at=unarch_form.created_at,
+        updated_at=unarch_form.updated_at,
+        current_version=FormVersionResponse.model_validate(latest_version) if latest_version else None
+    )
+
 @router.delete("/{form_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_form_permanently(
     form_id: int,
