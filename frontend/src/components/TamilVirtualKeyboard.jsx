@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Delete, Globe, Check, ArrowLeft } from 'lucide-react';
+import { Delete, Globe, Check } from 'lucide-react';
 
 // Unicode Tamil Character Sets
 const TAMIL_VOWELS = ['அ', 'ஆ', 'இ', 'ஈ', 'உ', 'ஊ', 'எ', 'ஏ', 'ஐ', 'ஒ', 'ஓ', 'ஔ'];

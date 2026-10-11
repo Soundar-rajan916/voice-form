@@ -6,7 +6,6 @@ import re
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
-import httpx
 from app.config import settings
 from app.services.questions import get_httpx_client
 

@@ -1,5 +1,4 @@
 import time
-import httpx
 from typing import Optional, Tuple
 from app.config import settings
 from app.services.questions import get_httpx_client

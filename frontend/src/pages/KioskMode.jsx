@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Mic, MicOff, Volume2, VolumeX, AlertCircle, RefreshCw,
+  Mic, Volume2, VolumeX, AlertCircle, RefreshCw,
   HelpCircle, CheckCircle, Printer, ArrowLeft, ArrowRight,
   Shield, Keyboard, Camera, Check, FileText
 } from 'lucide-react';
@@ -32,8 +32,8 @@ export default function KioskMode() {
   const [submissionData, setSubmissionData] = useState(null);
 
   // Kiosk Device Configuration
-  const [voiceMode, setVoiceMode] = useState('auto'); // 'auto' or 'push_to_talk'
-  const [idleTimeoutSeconds, setIdleTimeoutSeconds] = useState(60);
+  const [voiceMode] = useState('auto'); // 'auto' or 'push_to_talk'
+  const [idleTimeoutSeconds] = useState(60);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [ttsMissingTamil, setTtsMissingTamil] = useState(false);
 
@@ -60,8 +60,6 @@ export default function KioskMode() {
   const wsRef = useRef(null);
   const audioContextRef = useRef(null);
   const mediaStreamRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
 
   // Check TTS Voice on mount
   useEffect(() => {

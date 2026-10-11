@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { adminFormsApi } from '../api/client';
 import { Navbar } from '../components/Navbar';
-import { brandConfig } from '../brand';
 import {
   Plus, FileText, CheckCircle2, Archive, Edit3, Eye, Loader2, RefreshCw, AlertCircle, Trash2
 } from 'lucide-react';
@@ -12,8 +11,6 @@ export const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
-
-  const navigate = useNavigate();
 
   const loadForms = async () => {
     setLoading(true);

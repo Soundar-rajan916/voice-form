@@ -1,19 +1,16 @@
-import time
 import json
 import asyncio
-from typing import Dict
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.db import AsyncSessionLocal
-from app.models import Submission, FormVersion, FormField, SubmissionAnswer, SubmissionProposal
+from app.models import Submission, FormVersion, SubmissionAnswer
 from app.security import decode_access_token
 from app.services.session import FormSessionManager, session_manager
 from app.services.stt import transcribe_audio_wav
 from app.services.extraction import extract_answer
-from app.services.validation import validate_rule, fast_path_validate
+from app.services.validation import validate_rule
 from app.services.navigation import parse_navigation_command
 from app.services.normalizer import normalize_transcript
 from app.services.grounding import verify_grounding
@@ -159,7 +156,6 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
             message = await websocket.receive()
             if message.get("type") == "websocket.disconnect":
                 break
-            start_turn_time = time.time()
 
             # Handle JSON Control Commands
             if "text" in message and message["text"]:
@@ -187,7 +183,7 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     if msg_type == "accept_proposals":
                         prop_ids = text_data.get("proposal_ids")
                         async with AsyncSessionLocal() as db:
-                            accepted = await session_manager.accept_proposals(submission_id, prop_ids, db)
+                            await session_manager.accept_proposals(submission_id, prop_ids, db)
                         bot_txt = "Accepted document proposals."
                         session.add_bot_message(bot_txt)
                         nav_msg = session.build_state_dict()
@@ -284,7 +280,7 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         continue
 
                     elif msg_type == "undo":
-                        undone_id = session.undo_last()
+                        session.undo_last()
                         bot_txt = "Reverted previous answer."
                         session.add_bot_message(bot_txt)
                         nav_msg = session.build_state_dict()
@@ -324,8 +320,6 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     continue
 
                 audio_bytes = message["bytes"]
-                upload_time = round(time.time() - start_turn_time, 4)
-
                 language_hint = auth_data.get("language_hint", "auto")
                 transcript, detected_lang, stt_time = await transcribe_audio_wav(
                     audio_bytes, language_hint, current_field.description if current_field else None
@@ -344,7 +338,7 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                 # Check if audio transcript is "Accept All Proposals" command
                 if is_accept_all_command(transcript):
                     async with AsyncSessionLocal() as db:
-                        accepted = await session_manager.accept_proposals(submission_id, None, db)
+                        await session_manager.accept_proposals(submission_id, None, db)
                     bot_txt = "Accepted eligible document proposals."
                     session.add_bot_message(bot_txt)
                     nav_msg = session.build_state_dict()
@@ -507,7 +501,7 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     # Check if typed input is "accept all proposals"
                     if is_accept_all_command(val):
                         async with AsyncSessionLocal() as db:
-                            accepted = await session_manager.accept_proposals(submission_id, None, db)
+                            await session_manager.accept_proposals(submission_id, None, db)
                         bot_txt = "Accepted eligible document proposals."
                         session.add_bot_message(bot_txt)
                         nav_msg = session.build_state_dict()

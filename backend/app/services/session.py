@@ -1,4 +1,3 @@
-import asyncio
 from typing import Dict, Any, Optional, List
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

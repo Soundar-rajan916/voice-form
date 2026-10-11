@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { brandConfig } from '../brand';
-import { AlertCircle, LogIn, UserPlus, ArrowRight, User, Mail, Lock } from 'lucide-react';
+import { AlertCircle, LogIn, UserPlus, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
   const [isRegister, setIsRegister] = useState(false);

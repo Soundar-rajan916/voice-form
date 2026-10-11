@@ -3,12 +3,10 @@ import logging
 import re
 from typing import List, Dict, Any, Optional
 
-import httpx
 from app.config import settings
 from app.models import FormField
 from app.services.document_parser import DocumentParseResult, ProcessedPage
 from app.services.grounding import verify_grounding
-from app.services.normalizer import normalize_transcript
 from app.services.validation import validate_rule
 from app.services.questions import get_httpx_client
 from app.services.vision_reader import DocumentReader, GroqVisionDocumentReader

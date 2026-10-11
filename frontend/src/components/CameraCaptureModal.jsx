@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, Check, X, AlertTriangle, Image as ImageIcon } from 'lucide-react';
+import { Camera, RefreshCw, Check, X, AlertTriangle } from 'lucide-react';
 
 /**
  * Calculates variance of Laplacian on 2D canvas image data to detect blur.
@@ -7,7 +7,6 @@ import { Camera, RefreshCw, Check, X, AlertTriangle, Image as ImageIcon } from '
  */
 function checkBlurLaplacian(canvas) {
   try {
-    const ctx = canvas.getContext('2d');
     const width = Math.min(320, canvas.width);
     const height = Math.min(240, canvas.height);
 

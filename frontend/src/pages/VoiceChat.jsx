@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { userFormsApi } from '../api/client';
 import { useVad } from '../hooks/useVad';
@@ -11,12 +11,11 @@ import { MicControl } from '../components/MicControl';
 import { ConversationMessage } from '../components/ConversationMessage';
 import { PrivacyNoticeModal } from '../components/PrivacyNoticeModal';
 import { Toast } from '../components/Toast';
-import { NameChoices } from '../components/NameChoices';
 import { EditBanner } from '../components/EditBanner';
 import { Drawer } from '../components/Drawer';
 import { brandConfig } from '../brand';
 import {
-  ArrowLeft, Upload, FileText, X, Send, Undo2, Code, ChevronUp, AlertCircle
+  ArrowLeft, Upload, X, Code, ChevronUp
 } from 'lucide-react';
 
 const VAD_SILENCE_CONFIG = {
@@ -32,7 +31,6 @@ const VAD_SILENCE_CONFIG = {
 export const VoiceChat = () => {
   const { submissionId } = useParams();
   const { token } = useAuth();
-  const navigate = useNavigate();
 
   // Settings & Toggles
   const [uiLang, setUiLang] = useState('en');
@@ -93,7 +91,6 @@ export const VoiceChat = () => {
     vadState,
     isListening,
     permissionState,
-    errorDetails: micError,
     startListening,
     stopListening,
     toggleListening

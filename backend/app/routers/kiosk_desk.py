@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
@@ -10,13 +10,11 @@ from app.models import User, Form, FormVersion, Submission, KioskHelpRequest
 from app.schemas import (
     KioskSessionCreate, KioskSessionResponse,
     FormResponse,
-    KioskHelpRequestCreate, KioskHelpRequestResponse,
-    SubmissionResponse
+    KioskHelpRequestCreate, KioskHelpRequestResponse
 )
-from app.deps import require_kiosk, require_admin, get_current_user, get_current_user_optional
+from app.deps import require_admin, get_current_user_optional
 from app.security import create_kiosk_scoped_token
 from app.services.audit import record_audit_event
-from app.services.submission_title import compute_submission_titles_batch
 
 router = APIRouter(tags=["kiosk-desk"])
 

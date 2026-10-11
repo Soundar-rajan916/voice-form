@@ -1,7 +1,6 @@
 import io
 import logging
-import re
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Optional
 
 import pypdf
 import pypdfium2 as pdfium

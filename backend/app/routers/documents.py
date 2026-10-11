@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List
 
 import pypdf
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -76,10 +76,6 @@ async def upload_document_for_submission(
     if not form or not form.allow_document_upload:
         raise HTTPException(status_code=400, detail="Document upload is disabled for this form.")
 
-    version_res = await db.execute(
-        select(models.FormVersion).where(models.FormVersion.id == submission.form_version_id)
-    )
-    version = version_res.scalars().first()
     fields_res = await db.execute(
         select(models.FormField)
         .where(models.FormField.form_version_id == submission.form_version_id)

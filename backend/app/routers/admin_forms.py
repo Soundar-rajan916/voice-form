@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from app.config import settings
 from app.db import get_db
-from app.models import User, Form, FormVersion, FormField, Submission, SubmissionAnswer
+from app.models import User, Form, FormVersion, FormField, Submission
 from app.schemas import (
     FormCreate, FormUpdate, FormResponse, FormDetailResponse,
     FormVersionResponse, FormFieldResponse, SubmissionDetailResponse,
@@ -19,7 +19,7 @@ from app.services.questions import generate_field_questions
 from app.services.extraction import extract_answer
 from app.services.submission_title import compute_submission_titles_batch
 from app.services.audit import record_audit_event
-from app.services.crypto import decrypt_field_value, mask_field_value
+from app.services.crypto import decrypt_field_value
 
 router = APIRouter(prefix="/admin/forms", tags=["admin-forms"])
 

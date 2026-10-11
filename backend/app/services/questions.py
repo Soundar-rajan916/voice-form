@@ -87,7 +87,6 @@ OUTPUT FORMAT MUST BE VALID JSON ONLY:
 
 def _fallback_questions(field_name: str, description: str, data_type: str, choices: Optional[list] = None) -> Tuple[str, str]:
     cleaned_name = field_name.replace("_", " ").title()
-    desc = description if description and description.strip() else cleaned_name
 
     q_en = f"What is your {cleaned_name}?"
     q_ta = f"உங்கள் {cleaned_name} என்ன?"

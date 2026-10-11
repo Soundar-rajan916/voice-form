@@ -4,7 +4,6 @@ import { adminFormsApi } from '../api/client';
 import { Navbar } from '../components/Navbar';
 import { Sheet } from '../components/Sheet';
 import { Toast } from '../components/Toast';
-import { brandConfig } from '../brand';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors
 } from '@dnd-kit/core';
@@ -13,7 +12,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Plus, Trash2, GripVertical, Save, CheckCircle2, ArrowLeft, Loader2, AlertCircle
+  Plus, Trash2, GripVertical, CheckCircle2, ArrowLeft, Loader2, AlertCircle
 } from 'lucide-react';
 
 const DATA_TYPES = ['String', 'Number', 'Email', 'Phone', 'Date', 'Boolean', 'Choice'];

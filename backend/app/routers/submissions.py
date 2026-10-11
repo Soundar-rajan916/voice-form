@@ -9,7 +9,7 @@ from app.config import settings
 from app.db import get_db
 from app.models import User, Form, FormVersion, FormField, Submission, SubmissionAnswer
 from app.schemas import (
-    SubmissionResponse, SubmissionDetailResponse, SubmissionAnswerCreate,
+    SubmissionDetailResponse, SubmissionAnswerCreate,
     SubmissionAnswerResponse, FormFieldResponse, ReferenceLookupResponse
 )
 from app.deps import require_user, check_submission_access

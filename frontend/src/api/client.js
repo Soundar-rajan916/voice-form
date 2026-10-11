@@ -77,7 +77,6 @@ export const adminFormsApi = {
   },
   getCSVUrl: (formId, versionId) => {
     const query = versionId ? `?version_id=${versionId}` : '';
-    const token = localStorage.getItem('voiceform_token');
     return `/admin/forms/${formId}/submissions.csv${query}`;
   },
 };

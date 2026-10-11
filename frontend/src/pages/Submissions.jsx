@@ -4,7 +4,7 @@ import { adminFormsApi } from '../api/client';
 import { Navbar } from '../components/Navbar';
 import { brandConfig } from '../brand';
 import {
-  Download, ArrowLeft, Loader2, Filter, AlertCircle, FileText, Printer, CheckCircle2, X
+  Download, ArrowLeft, Loader2, Filter, AlertCircle, FileText, Printer, X
 } from 'lucide-react';
 import { ReceiptSlipPrint } from '../components/ReceiptSlipPrint';
 import { ApplicationA4Print } from '../components/ApplicationA4Print';
