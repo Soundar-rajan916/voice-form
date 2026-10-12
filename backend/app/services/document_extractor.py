@@ -105,7 +105,7 @@ async def extract_proposals_from_document(
             continue
 
         # 3. Data type normalization and rule validation
-        is_valid, norm_val, err = validate_rule(str(raw_val), target_field.data_type, target_field.choices)
+        is_valid, norm_val, err = validate_rule(str(raw_val), target_field.data_type, target_field.choices, field_name=target_field.field_name)
         if not is_valid:
             logger.info(f"[DocExtractor] Normalization/rule failed for field {target_field.field_name} value '{raw_val}': {err}")
             continue

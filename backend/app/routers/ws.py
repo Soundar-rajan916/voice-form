@@ -511,7 +511,8 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         target_field_obj = session.get_field_by_id(target_field_id) or current_field
                         normalized_val = normalize_transcript(val, target_field_obj.data_type)
 
-                        is_valid, cleaned, err = validate_rule(normalized_val, target_field_obj.data_type, target_field_obj.choices)
+                        f_name = target_field_obj.field_name if target_field_obj else None
+                        is_valid, cleaned, err = validate_rule(normalized_val, target_field_obj.data_type, target_field_obj.choices, field_name=f_name)
                         is_grd, g_reason = verify_grounding(cleaned if is_valid else normalized_val, val, target_field_obj.data_type)
 
                         if is_valid and is_grd:

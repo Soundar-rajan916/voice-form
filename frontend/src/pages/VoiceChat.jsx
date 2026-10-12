@@ -288,10 +288,13 @@ export const VoiceChat = () => {
     if (isCompleted && !hasAddedCompletedMsgRef.current && chatMessages.length > 0) {
       hasAddedCompletedMsgRef.current = true;
       const compMsg = getTranslation(uiLang, 'completed_stage_msg');
-      setChatMessages((prev) => [
-        ...prev,
-        { sender: 'bot', text: compMsg, lang: uiLang }
-      ]);
+      setChatMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.sender === 'bot' && last.text === compMsg) {
+          return prev;
+        }
+        return [...prev, { sender: 'bot', text: compMsg, lang: uiLang }];
+      });
       stopListeningRef.current?.();
       speakRef.current?.(compMsg, uiLang);
     } else if (!isCompleted) {
@@ -382,8 +385,15 @@ export const VoiceChat = () => {
         }
 
         if (data.mode === 'review' || data.all_answered) {
+          hasAddedCompletedMsgRef.current = true;
           const completionMsg = getTranslation(currentLang, 'completed_stage_msg');
-          setChatMessages((prev) => [...prev, { sender: 'bot', text: completionMsg, lang: currentLang }]);
+          setChatMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last && last.sender === 'bot' && last.text === completionMsg) {
+              return prev;
+            }
+            return [...prev, { sender: 'bot', text: completionMsg, lang: currentLang }];
+          });
           speakRef.current?.(completionMsg, currentLang);
         } else if (data.current_field) {
           promptFieldQuestionRef.current?.(data.current_field, currentLang, data.mode === 'editing');

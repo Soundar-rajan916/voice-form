@@ -63,7 +63,7 @@ async def extract_answer(
     desc = description if description and description.strip() else f"value for {field_name}"
 
     # 1. FAST PATH CHECK (String fields NEVER take fast path)
-    is_fast_path, fast_val = fast_path_validate(combined_transcript, data_type, choices)
+    is_fast_path, fast_val = fast_path_validate(combined_transcript, data_type, choices, field_name=field_name)
     if is_fast_path:
         dur = round(time.time() - start_time, 4)
         print(f"[Extraction Path=fast_path] Field='{field_name}' Type='{data_type}' Extracted='{fast_val}' Latency={dur}s")
@@ -170,7 +170,7 @@ OUTPUT FORMAT: STRICT JSON ONLY with keys: intent, value, fulfilled, incomplete,
 
                 if result.intent == "answer" and result.value:
                     refined_val = _refine_string_value(result.value, data_type)
-                    is_valid, cleaned_val, err = validate_rule(refined_val, data_type, choices)
+                    is_valid, cleaned_val, err = validate_rule(refined_val, data_type, choices, field_name=field_name)
                     if is_valid:
                         result.value = cleaned_val
                         result.fulfilled = True
@@ -191,7 +191,7 @@ OUTPUT FORMAT: STRICT JSON ONLY with keys: intent, value, fulfilled, incomplete,
 
     # Fallback refinement if LLM fails
     refined = _refine_string_value(combined_transcript, data_type)
-    is_valid, cleaned_val, err = validate_rule(refined, data_type, choices)
+    is_valid, cleaned_val, err = validate_rule(refined, data_type, choices, field_name=field_name)
     dur = round(time.time() - start_time, 4)
     if is_valid:
         return ExtractionResult(

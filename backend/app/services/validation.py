@@ -23,7 +23,8 @@ def normalize_spoken_digits(text: str) -> str:
 def fast_path_validate(
     transcript: str,
     data_type: str,
-    choices: Optional[List[str]] = None
+    choices: Optional[List[str]] = None,
+    field_name: Optional[str] = None
 ) -> Tuple[bool, Optional[str]]:
     """
     Checks if transcript matches true fast path (no LLM required).
@@ -41,9 +42,15 @@ def fast_path_validate(
             return True, digits_only
         elif data_type == "Number" and digits_only.isdigit():
             num_val = int(digits_only)
-            if 0 <= num_val < 100:
-                return True, str(num_val)
-            return False, None
+            is_age = bool(field_name and "age" in field_name.lower())
+            if is_age:
+                if 0 <= num_val < 100:
+                    return True, str(num_val)
+                return False, None
+            else:
+                if num_val >= 0:
+                    return True, str(num_val)
+                return False, None
 
     elif data_type == "Boolean":
         if clean_text in ["yes", "yeah", "yup", "true", "1", "ஆமாம்", "சரி", "ஆம்"]:
@@ -61,7 +68,8 @@ def fast_path_validate(
 def validate_rule(
     value: str,
     data_type: str,
-    choices: Optional[List[str]] = None
+    choices: Optional[List[str]] = None,
+    field_name: Optional[str] = None
 ) -> Tuple[bool, str, Optional[str]]:
     """
     Rule-based validation of value post-LLM extraction.
@@ -90,19 +98,33 @@ def validate_rule(
 
     elif data_type == "Number":
         normalized = normalize_spoken_digits(val_str)
+        is_age_field = bool(field_name and "age" in field_name.lower())
         try:
             if "." in normalized:
                 num = float(normalized)
-                if num < 0 or num >= 100:
-                    return False, val_str, "Age must be under 100 (0 to 99)."
+                if is_age_field:
+                    if num < 0 or num >= 100:
+                        return False, val_str, "Age must be under 100 (0 to 99)."
+                else:
+                    if num < 0:
+                        return False, val_str, f"{field_name or 'Number'} cannot be negative."
                 return True, str(num), None
             else:
-                num = int(re.sub(r"[^\d-]", "", normalized))
-                if num < 0 or num >= 100:
-                    return False, val_str, "Age must be under 100 (0 to 99)."
+                clean_num_str = re.sub(r"[^\d-]", "", normalized)
+                if not clean_num_str or clean_num_str == "-":
+                    raise ValueError("No digits")
+                num = int(clean_num_str)
+                if is_age_field:
+                    if num < 0 or num >= 100:
+                        return False, val_str, "Age must be under 100 (0 to 99)."
+                else:
+                    if num < 0:
+                        return False, val_str, f"{field_name or 'Number'} cannot be negative."
                 return True, str(num), None
         except ValueError:
-            return False, val_str, "Please enter a valid number under 100."
+            if is_age_field:
+                return False, val_str, "Please enter a valid age under 100."
+            return False, val_str, "Please enter a valid number."
 
     elif data_type == "Date":
         date_formats = ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"]
