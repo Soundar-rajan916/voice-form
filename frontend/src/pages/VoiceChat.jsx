@@ -259,7 +259,7 @@ export const VoiceChat = () => {
     if (data.answers) {
       const updatedAns = {};
       Object.entries(data.answers).forEach(([fId, aObj]) => {
-        updatedAns[fId] = aObj.value;
+        updatedAns[fId] = (typeof aObj === 'object' && aObj !== null) ? aObj.value : aObj;
       });
       setAnswers(updatedAns);
     }
@@ -321,20 +321,76 @@ export const VoiceChat = () => {
 
       if (data.type === 'ready') {
         applyServerStateRef.current?.(data);
+
+        const initialMessages = [];
+        const fieldsList = data.fields || [];
+        const answersMap = data.answers || {};
+
+        // Reconstruct conversation history from answered fields in position order
+        fieldsList.forEach((f) => {
+          const ansEntry = answersMap[f.id];
+          const hasVal =
+            ansEntry &&
+            ((typeof ansEntry === 'object' &&
+              ansEntry.value !== null &&
+              ansEntry.value !== undefined &&
+              String(ansEntry.value).trim() !== '') ||
+              (typeof ansEntry !== 'object' && String(ansEntry).trim() !== ''));
+
+          if (hasVal) {
+            const qText =
+              currentLang === 'ta' && f.question_ta ? f.question_ta : (f.question_en || f.field_name);
+            initialMessages.push({
+              sender: 'bot',
+              text: qText,
+              fieldName: f.field_name,
+              fieldId: f.id,
+              lang: currentLang === 'ta' ? 'ta' : 'en'
+            });
+
+            const ansVal = typeof ansEntry === 'object' ? (ansEntry.raw_transcript || ansEntry.value) : ansEntry;
+            const isVoice = typeof ansEntry === 'object' ? ansEntry.source === 'voice' : false;
+            const userLang = typeof ansEntry === 'object' && ansEntry.language ? ansEntry.language : currentLang;
+            initialMessages.push({
+              sender: 'user',
+              text: String(ansVal),
+              fieldName: f.field_name,
+              fieldId: f.id,
+              isVoice: isVoice,
+              lang: userLang
+            });
+          }
+        });
+
         if (data.submission_status === 'submitted') {
-          setChatMessages([
-            { sender: 'bot', text: getTranslation(currentLang, 'submitted_lock_msg') }
-          ]);
+          hasAddedCompletedMsgRef.current = true;
+          initialMessages.push({
+            sender: 'bot',
+            text: getTranslation(currentLang, 'submitted_lock_msg'),
+            lang: currentLang
+          });
+          setChatMessages(initialMessages);
         } else if (data.all_answered || data.mode === 'review') {
-          setChatMessages([
-            { sender: 'bot', text: getTranslation(currentLang, 'completed_stage_msg') }
-          ]);
+          hasAddedCompletedMsgRef.current = true;
+          initialMessages.push({
+            sender: 'bot',
+            text: getTranslation(currentLang, 'completed_stage_msg'),
+            lang: currentLang
+          });
+          setChatMessages(initialMessages);
         } else if (data.current_field) {
-          const title = data.form_title || 'your application form';
-          setChatMessages([
-            { sender: 'bot', text: getTranslation(currentLang, 'welcome_msg', { title }) }
-          ]);
+          if (initialMessages.length === 0) {
+            const title = data.form_title || 'your application form';
+            initialMessages.push({
+              sender: 'bot',
+              text: getTranslation(currentLang, 'welcome_msg', { title }),
+              lang: currentLang
+            });
+          }
+          setChatMessages(initialMessages);
           promptFieldQuestionRef.current?.(data.current_field, currentLang);
+        } else {
+          setChatMessages(initialMessages);
         }
       }
 
@@ -768,7 +824,7 @@ export const VoiceChat = () => {
               <ConversationMessage
                 key={idx}
                 message={msg}
-                onRetryVoice={() => handleMicTap()}
+                onRetryVoice={submissionStatus === 'submitted' ? undefined : () => handleMicTap()}
               />
             ))}
             <div ref={chatEndRef} />
@@ -827,6 +883,32 @@ export const VoiceChat = () => {
                   >
                     {t('btn_change_answer')}
                   </button>
+                </div>
+              </div>
+            ) : submissionStatus === 'submitted' ? (
+              /* Locked/Submitted Notice Bar */
+              <div className="bg-[#E3D5CA]/70 border border-[#D6CCC2] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+                <div className="flex items-center space-x-3 w-full sm:w-auto">
+                  <div className="w-10 h-10 rounded-full bg-[#15803D]/10 text-[#15803D] flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-[#1C1917] font-body leading-tight">
+                      {t('stamp_submitted') || 'Submitted Application'}
+                    </h2>
+                    <p className="text-sm text-[#524E4A] font-body mt-0.5">
+                      {t('submitted_lock_msg')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+                  <Link
+                    to="/user#my-submissions"
+                    className="px-5 py-3 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-sm rounded-lg transition-colors flex items-center justify-center min-h-[44px]"
+                  >
+                    {t('success_btn_my_apps') || 'My Applications'}
+                  </Link>
                 </div>
               </div>
             ) : (

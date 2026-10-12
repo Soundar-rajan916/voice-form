@@ -42,10 +42,17 @@ class FormSessionManager:
         self.websockets: List[Any] = []
 
         # Load existing answers
+        field_map = {f.id: f for f in self.fields}
         for ans in submission.answers:
             if ans.value is not None:
+                val = ans.value
+                f_obj = field_map.get(ans.field_id)
+                if f_obj and getattr(f_obj, "is_sensitive_number", False) and val:
+                    from app.services.crypto import decrypt_field_value, mask_field_value
+                    plain = decrypt_field_value(val)
+                    val = mask_field_value(plain)
                 self.answers[ans.field_id] = {
-                    "value": ans.value,
+                    "value": val,
                     "raw_transcript": ans.raw_transcript,
                     "language": ans.language,
                     "source": ans.source or "typed",
