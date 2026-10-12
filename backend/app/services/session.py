@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Submission, FormVersion, FormField, SubmissionAnswer, SubmissionProposal
+from app.services.filters import strip_emojis
 
 SENSITIVE_DATA_TYPES = {"Email", "Phone", "Number", "Date"}
 
@@ -52,7 +53,7 @@ class FormSessionManager:
                     plain = decrypt_field_value(val)
                     val = mask_field_value(plain)
                 self.answers[ans.field_id] = {
-                    "value": val,
+                    "value": strip_emojis(str(val)) if val and not str(val).startswith("enc:") else val,
                     "raw_transcript": ans.raw_transcript,
                     "language": ans.language,
                     "source": ans.source or "typed",
@@ -79,9 +80,9 @@ class FormSessionManager:
                         "submission_id": prop.submission_id,
                         "field_id": prop.field_id,
                         "field_name": f_name,
-                        "value": prop.value,
+                        "value": strip_emojis(str(prop.value)) if prop.value else prop.value,
                         "confidence": prop.confidence,
-                        "evidence": prop.evidence,
+                        "evidence": strip_emojis(str(prop.evidence)) if prop.evidence else prop.evidence,
                         "page": prop.page,
                         "read_method": prop.read_method,
                         "status": prop.status,
@@ -105,8 +106,9 @@ class FormSessionManager:
         self.current_field_index = max(0, len(self.fields) - 1)
 
     def add_bot_message(self, text: str):
-        if text and text.strip():
-            self.recent_bot_messages.append(text.strip())
+        cleaned = strip_emojis(text).strip() if text else ""
+        if cleaned:
+            self.recent_bot_messages.append(cleaned)
             if len(self.recent_bot_messages) > 10:
                 self.recent_bot_messages.pop(0)
 
@@ -191,8 +193,9 @@ class FormSessionManager:
         return None
 
     def record_answer(self, field_id: int, value: str, raw_transcript: str, language: str, source: str = "typed", evidence: Optional[str] = None):
+        clean_val = strip_emojis(str(value)) if (value is not None and not str(value).startswith("enc:")) else value
         self.answers[field_id] = {
-            "value": value,
+            "value": clean_val,
             "raw_transcript": raw_transcript,
             "language": language,
             "source": source,

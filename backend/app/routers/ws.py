@@ -249,7 +249,7 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                         sub_msg = session.build_state_dict()
                         sub_msg.update({
                             "type": "submitted",
-                            "message": "🎉 Form successfully submitted!"
+                            "message": "Form successfully submitted!"
                         })
                         await websocket.send_json(sub_msg)
                         continue

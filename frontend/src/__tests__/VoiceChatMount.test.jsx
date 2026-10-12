@@ -114,8 +114,9 @@ describe('VoiceChat Page Mount', () => {
     // No type-to-answer text composer should exist
     expect(screen.queryByPlaceholderText(/Type your answer here/i)).toBeNull();
 
-    // The submitted application summary / ledger should be visible
+    // The submitted application summary / ledger should be visible in a table
     expect(await screen.findByText('Old Age Pension Form')).toBeDefined();
+    expect(screen.getByRole('table')).toBeDefined();
     const submittedBadges = await screen.findAllByText(/SUBMITTED/i);
     expect(submittedBadges.length).toBeGreaterThan(0);
     expect(await screen.findByText(/This application has been completed and is locked/i)).toBeDefined();

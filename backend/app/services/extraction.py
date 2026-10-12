@@ -17,9 +17,11 @@ FILLER_PREFIXES = [
     r"^hello my name is\s+", r"^i'm\s+"
 ]
 
+from app.services.filters import strip_emojis
+
 def _refine_string_value(text: str, data_type: str) -> str:
-    """Refines raw string value by removing conversational filler words and normalizing symbols."""
-    cleaned = text.strip()
+    """Refines raw string value by removing conversational filler words, emojis, and normalizing symbols."""
+    cleaned = strip_emojis(text).strip()
 
     if data_type == "String":
         for pattern in FILLER_PREFIXES:
@@ -133,6 +135,7 @@ EXTRACTION RULES:
 3. Convert spoken email phrases ("at the rate", "dot com") to standard email symbols.
 4. If the answer is incomplete, set incomplete = true, fulfilled = false, and write a targeted follow-up in the user's language asking ONLY for what is missing.
 5. If the utterance does not satisfy the description, set fulfilled = false and provide a polite, targeted follow-up asking for what is missing (NEVER repeat the original question word-for-word).
+6. CRITICAL: NEVER return or include ANY emojis, emoticons, or pictographs under any circumstances. Both 'value' and 'follow_up' MUST be clean plain text only without any emojis.
 
 OUTPUT FORMAT: STRICT JSON ONLY with keys: intent, value, fulfilled, incomplete, follow_up, target_field."""
 
@@ -168,6 +171,11 @@ OUTPUT FORMAT: STRICT JSON ONLY with keys: intent, value, fulfilled, incomplete,
                 parsed = json.loads(cleaned_json_str)
                 result = ExtractionResult.model_validate(parsed)
 
+                if result.value:
+                    result.value = strip_emojis(str(result.value))
+                if result.follow_up:
+                    result.follow_up = strip_emojis(result.follow_up) or None
+
                 if result.intent == "answer" and result.value:
                     refined_val = _refine_string_value(result.value, data_type)
                     is_valid, cleaned_val, err = validate_rule(refined_val, data_type, choices, field_name=field_name)
@@ -182,6 +190,7 @@ OUTPUT FORMAT: STRICT JSON ONLY with keys: intent, value, fulfilled, incomplete,
 
                 print(f"[Extraction Path={path_taken}] Field='{field_name}' Type='{data_type}' Value='{result.value}' Fulfilled={result.fulfilled} Latency={dur}s")
                 return result, dur, path_taken
+
             else:
                 print(f"[Extraction Groq LLM non-200] Status={res.status_code} Body={res.text}")
 

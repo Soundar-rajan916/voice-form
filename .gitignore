@@ -20,7 +20,11 @@ backend/.pytest_cache/
 htmlcov/
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
 backend/*.db
+backend/*.db-shm
+backend/*.db-wal
 voiceform.db
 backend/voiceform.db
 

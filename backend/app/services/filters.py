@@ -10,6 +10,36 @@ HALLUCINATION_PHRASES = [
 
 VALID_SHORT_ANSWERS = {"yes", "no", "true", "false", "ok", "yeah", "nope", "yep", "ஆம்", "இல்லை", "சரி"}
 
+EMOJI_PATTERN = re.compile(
+    "["
+    "\U0001F600-\U0001F64F"  # emoticons
+    "\U0001F300-\U0001F5FF"  # symbols & pictographs
+    "\U0001F680-\U0001F6FF"  # transport & map symbols
+    "\U0001F1E0-\U0001F1FF"  # flags
+    "\U0001F900-\U0001F9FF"  # supplemental symbols and pictographs
+    "\U0001FA00-\U0001FAFF"  # symbols and pictographs extended-a
+    "\U00002700-\U000027BF"  # dingbats
+    "\U00002600-\U000026FF"  # misc symbols
+    "\U00002300-\U000023FF"  # misc technical
+    "\U00002B50-\U00002B55"  # star, circle
+    "\uFE0E-\uFE0F"          # variation selectors
+    "\u200D"                 # zero-width joiner
+    "]+",
+    flags=re.UNICODE
+)
+
+def strip_emojis(text: Optional[str]) -> str:
+    """
+    Strips all emojis, emoticons, pictographs, and related variation selectors
+    from the input string and cleans up excess whitespace.
+    """
+    if not text:
+        return ""
+    cleaned = EMOJI_PATTERN.sub("", str(text))
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    return cleaned.strip()
+
+
 def check_echo_guard(
     transcript: str,
     recent_bot_messages: List[str],

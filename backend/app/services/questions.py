@@ -3,6 +3,7 @@ import re
 import httpx
 from typing import Tuple, Optional
 from app.config import settings
+from app.services.filters import strip_emojis
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -42,6 +43,7 @@ RULES:
 1. Questions must be well-formed, polite, capitalized, and end with a question mark.
 2. English question must be natural (e.g. "What is your full name?", "May I have your email address?").
 3. Tamil question must be in natural Tamil script (e.g. "உங்கள் முழு பெயர் என்ன?", "உங்கள் மின்னஞ்சல் முகவரியைக் கூற முடியுமா?").
+4. CRITICAL: Do NOT include ANY emojis, emoticons, or icons. Output strictly plain text questions only.
 
 OUTPUT FORMAT MUST BE VALID JSON ONLY:
 {{
@@ -57,7 +59,7 @@ OUTPUT FORMAT MUST BE VALID JSON ONLY:
     payload = {
         "model": settings.GROQ_LLM_MODEL,
         "messages": [
-            {"role": "system", "content": "You output only valid JSON with keys question_en and question_ta."},
+            {"role": "system", "content": "You output only valid JSON with keys question_en and question_ta. Never include any emojis or emoticons."},
             {"role": "user", "content": prompt}
         ],
         "temperature": 0.0,
@@ -76,8 +78,8 @@ OUTPUT FORMAT MUST BE VALID JSON ONLY:
                 text = re.sub(r"^```(?:json)?\n?", "", text, flags=re.IGNORECASE)
                 text = re.sub(r"\n?```$", "", text)
             parsed = json.loads(text)
-            q_en = parsed.get("question_en", "").strip()
-            q_ta = parsed.get("question_ta", "").strip()
+            q_en = strip_emojis(parsed.get("question_en", "")).strip()
+            q_ta = strip_emojis(parsed.get("question_ta", "")).strip()
             if q_en and q_ta:
                 return q_en, q_ta
     except Exception as e:

@@ -89,3 +89,24 @@ def test_rule_validation():
     valid_inc_ok, clean_inc, _ = validate_rule("50000", "Number", field_name="monthly_income")
     assert valid_inc_ok is True
     assert clean_inc == "50000"
+
+def test_strip_emojis_removes_various_emojis():
+    from app.services.filters import strip_emojis
+    assert strip_emojis("Hello 😊 World! 🎉") == "Hello World!"
+    assert strip_emojis("Soundararajan 👍") == "Soundararajan"
+    assert strip_emojis("Tamil: என் பெயர் சவுந்தரராஜன் 🚀") == "Tamil: என் பெயர் சவுந்தரராஜன்"
+    assert strip_emojis("⭐ Phone: 9080965547 📱") == "Phone: 9080965547"
+    assert strip_emojis(None) == ""
+    assert strip_emojis("") == ""
+
+@pytest.mark.asyncio
+async def test_extract_answer_strips_emojis_from_value():
+    result, dur, path = await extract_answer(
+        field_name="full_name",
+        data_type="String",
+        description="full name of the user",
+        transcript="My name is Soundararajan 😊"
+    )
+    assert "😊" not in result.value
+    assert result.value == "Soundararajan"
+

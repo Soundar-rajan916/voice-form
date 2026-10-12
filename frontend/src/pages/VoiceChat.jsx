@@ -18,7 +18,7 @@ import { SubmissionSuccessModal } from '../components/SubmissionSuccessModal';
 import { getTranslation } from '../i18n';
 import { brandConfig } from '../brand';
 import {
-  ArrowLeft, Upload, X, Code, ChevronUp, CheckCircle2, ArrowDown, Printer
+  ArrowLeft, Upload, X, Code, ChevronUp, CheckCircle2, ArrowDown
 } from 'lucide-react';
 
 const VAD_SILENCE_CONFIG = {
@@ -676,7 +676,9 @@ export const VoiceChat = () => {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="min-h-screen bg-[#EDEDE9] text-[#1C1917] flex flex-col h-screen overflow-hidden relative font-body"
+      className={`min-h-screen bg-[#EDEDE9] text-[#1C1917] flex flex-col relative font-body ${
+        isSubmitted ? 'overflow-y-auto' : 'h-screen overflow-hidden'
+      }`}
     >
       <Navbar
         uiLang={uiLang}
@@ -725,7 +727,7 @@ export const VoiceChat = () => {
 
       {/* Main Container */}
       {isSubmitted ? (
-        <div className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 md:p-6 flex flex-col overflow-y-auto">
+        <div className="max-w-4xl w-full mx-auto p-4 sm:p-6 md:p-8 flex flex-col">
           {/* Header Card */}
           <div className="bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl sheet-shadow p-5 sm:p-6 mb-4 sm:mb-6 shrink-0">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#D6CCC2]">
@@ -753,15 +755,6 @@ export const VoiceChat = () => {
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
                   {t('stamp_submitted') || 'SUBMITTED'}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="px-3.5 py-1.5 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] text-xs sm:text-sm font-semibold rounded-md transition-colors cursor-pointer min-h-[38px] flex items-center space-x-1.5"
-                  title="Print Application"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Print</span>
-                </button>
               </div>
             </div>
 
@@ -779,21 +772,83 @@ export const VoiceChat = () => {
             </div>
           </div>
 
-          {/* Form Answers Sheet - Prominently Displayed */}
-          <div className="flex-1 min-h-[460px] bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl sheet-shadow p-2 sm:p-4 mb-4 sm:mb-6">
-            <Sheet
-              fields={fields}
-              answers={answers}
-              currentFieldId={null}
-              editingFieldId={null}
-              mode="review"
-              allAnswered={true}
-              submissionStatus={submissionStatus}
-              submitting={false}
-              onSubmit={() => {}}
-              onGotoField={() => {}}
-              uiLang={uiLang}
-            />
+          {/* Form Answers Table - Clean, Official Read-Only Ledger */}
+          <div className="bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl sheet-shadow overflow-hidden mb-6">
+            <div className="p-4 sm:p-5 border-b border-[#D6CCC2] bg-[#F5EBE0] flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold font-display text-[#1C1917]">
+                  {t('panel_title_answers') || 'Submitted Application Details'}
+                </h2>
+                <p className="text-xs sm:text-sm text-[#524E4A] font-body mt-0.5">
+                  {t('sheet_progress', { answered: answeredCount, total: fields.length })}
+                </p>
+              </div>
+              <span className="text-xs sm:text-sm font-semibold px-2.5 py-1 rounded bg-[#15803D]/10 text-[#15803D]">
+                100% Completed
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm border-collapse font-body" role="table">
+                <thead>
+                  <tr className="bg-[#D6CCC2]/70 text-[#1C1917] font-semibold border-b border-[#D6CCC2]">
+                    <th scope="col" className="py-3 px-4 w-12 text-center text-xs uppercase tracking-wider text-[#524E4A]">#</th>
+                    <th scope="col" className="py-3 px-4 sm:px-6 text-xs uppercase tracking-wider text-[#524E4A]">Field & Question</th>
+                    <th scope="col" className="py-3 px-4 sm:px-6 text-xs uppercase tracking-wider text-[#524E4A]">Submitted Value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#D6CCC2]">
+                  {fields.map((field, idx) => {
+                    const rawVal = answers[field.id];
+                    let displayVal = '—';
+                    if (rawVal !== undefined && rawVal !== null && String(rawVal).trim() !== '') {
+                      if (typeof rawVal === 'boolean') {
+                        displayVal = rawVal ? 'Yes' : 'No';
+                      } else {
+                        displayVal = String(rawVal);
+                      }
+                    }
+
+                    const qText = uiLang === 'ta' && field.question_ta
+                      ? field.question_ta
+                      : (field.question_en || field.field_name);
+
+                    const fieldFriendlyName = (field.field_name || `Field ${idx + 1}`).replace(/_/g, ' ');
+
+                    return (
+                      <tr key={field.id} className="hover:bg-[#E3D5CA]/30 transition-colors">
+                        <td className="py-3.5 px-4 text-center font-mono text-xs text-[#524E4A] align-top">
+                          {idx + 1}
+                        </td>
+                        <td className="py-3.5 px-4 sm:px-6 align-top">
+                          <div className="text-xs font-bold uppercase tracking-wider text-[#524E4A] mb-1 font-body">
+                            {fieldFriendlyName}
+                          </div>
+                          <div className="text-sm text-[#1C1917] font-medium leading-relaxed">
+                            {qText}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 sm:px-6 align-top font-medium text-sm sm:text-base text-[#1C1917] bg-[#E3D5CA]/10">
+                          {displayVal === '—' ? (
+                            <span className="text-[#524E4A] italic">—</span>
+                          ) : (
+                            <span className="font-semibold text-[#1C1917] break-words">
+                              {displayVal}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Official Certification Footer inside the card */}
+            <div className="p-4 bg-[#E3D5CA]/40 border-t border-[#D6CCC2] flex flex-col sm:flex-row items-center justify-between text-xs text-[#524E4A] gap-2">
+              <span>{brandConfig.officeName || 'Citizen Service Centre'} • Official Record</span>
+              <span>Submission ID #{submissionId}</span>
+            </div>
           </div>
 
           {/* Quick Nav Actions */}
