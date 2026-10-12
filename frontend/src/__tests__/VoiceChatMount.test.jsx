@@ -68,8 +68,7 @@ describe('VoiceChat Page Mount', () => {
     expect(screen.getByLabelText(/Main Navigation/i)).toBeDefined();
   });
 
-  it('restores previous conversation history and questions when reopening a submitted form', async () => {
-
+  it('does not show chat when reopening a submitted form and displays submitted ledger', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       user: { id: 10, username: 'testcitizen', role: 'user' },
       token: 'mock-token',
@@ -109,14 +108,65 @@ describe('VoiceChat Page Mount', () => {
       }
     });
 
-    // Verify reconstructed conversation messages
+    // Chat container (role="log") should NOT exist for submitted forms
+    expect(screen.queryByRole('log')).toBeNull();
+
+    // No type-to-answer text composer should exist
+    expect(screen.queryByPlaceholderText(/Type your answer here/i)).toBeNull();
+
+    // The submitted application summary / ledger should be visible
+    expect(await screen.findByText('Old Age Pension Form')).toBeDefined();
+    const submittedBadges = await screen.findAllByText(/SUBMITTED/i);
+    expect(submittedBadges.length).toBeGreaterThan(0);
+    expect(await screen.findByText(/This application has been completed and is locked/i)).toBeDefined();
+    const ans1 = await screen.findAllByText('Soundararajan');
+    expect(ans1.length).toBeGreaterThan(0);
+    const ans2 = await screen.findAllByText('65');
+    expect(ans2.length).toBeGreaterThan(0);
+  });
+
+  it('restores previous conversation history when reopening an in-progress form', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      user: { id: 10, username: 'testcitizen', role: 'user' },
+      token: 'mock-token',
+      loading: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/fill/150']}>
+        <Routes>
+          <Route path="/fill/:submissionId" element={<VoiceChat />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const mockInProgressPayload = {
+      type: 'ready',
+      submission_id: 150,
+      submission_status: 'in_progress',
+      form_title: 'Old Age Pension Form',
+      current_field: { id: 2, field_name: 'age', question_en: 'What is your age in completed years?', position: 1 },
+      fields: [
+        { id: 1, field_name: 'full_name', question_en: 'What is your full name?', position: 0 },
+        { id: 2, field_name: 'age', question_en: 'What is your age in completed years?', position: 1 },
+      ],
+      answers: {
+        1: { value: 'Soundararajan', raw_transcript: 'Soundararajan', source: 'voice', language: 'en' },
+      },
+    };
+
+    const wsInstance = MockWebSocket.lastInstance;
+    expect(wsInstance).not.toBeNull();
+    act(() => {
+      if (wsInstance && wsInstance.onmessage) {
+        wsInstance.onmessage({ data: JSON.stringify(mockInProgressPayload) });
+      }
+    });
+
+    // Chat log SHOULD exist for active/in-progress forms
+    expect(screen.getByRole('log')).toBeDefined();
     expect(await screen.findByText('What is your full name?')).toBeDefined();
-    const answers1 = await screen.findAllByText('Soundararajan');
-    expect(answers1.length).toBeGreaterThan(0);
-    expect(await screen.findByText('What is your age in completed years?')).toBeDefined();
-    const answers2 = await screen.findAllByText('65');
-    expect(answers2.length).toBeGreaterThan(0);
-    const lockMsgs = await screen.findAllByText(/This application has been completed and is locked/i);
-    expect(lockMsgs.length).toBeGreaterThan(0);
+    const inProgressAns = await screen.findAllByText('Soundararajan');
+    expect(inProgressAns.length).toBeGreaterThan(0);
   });
 });

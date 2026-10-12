@@ -16,8 +16,9 @@ import { Drawer } from '../components/Drawer';
 import { ReviewModal } from '../components/ReviewModal';
 import { SubmissionSuccessModal } from '../components/SubmissionSuccessModal';
 import { getTranslation } from '../i18n';
+import { brandConfig } from '../brand';
 import {
-  ArrowLeft, Upload, X, Code, ChevronUp, CheckCircle2, ArrowDown
+  ArrowLeft, Upload, X, Code, ChevronUp, CheckCircle2, ArrowDown, Printer
 } from 'lucide-react';
 
 const VAD_SILENCE_CONFIG = {
@@ -57,6 +58,8 @@ export const VoiceChat = () => {
   const [allAnswered, setAllAnswered] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState('in_progress');
   const [formTitle, setFormTitle] = useState('Application Form');
+
+  const isSubmitted = submissionStatus === 'submitted' || submissionStatus === 'completed';
 
   // Document Upload & Progress State
   const [docUploading, setDocUploading] = useState(false);
@@ -123,7 +126,7 @@ export const VoiceChat = () => {
   } = useVad({
     onSpeechEnd: handleSpeechEnd,
     silenceDurationMs,
-    disabled: isSpeaking || submissionStatus === 'submitted'
+    disabled: isSpeaking || isSubmitted
   });
 
   const promptFieldQuestionRef = useRef(null);
@@ -281,7 +284,7 @@ export const VoiceChat = () => {
   const isCompleted =
     (allAnswered || (fields.length > 0 && answeredCount >= fields.length) || mode === 'review') &&
     mode !== 'editing' &&
-    submissionStatus !== 'submitted';
+    !isSubmitted;
 
   // Add completion assistant message once upon entering completed state
   useEffect(() => {
@@ -321,6 +324,13 @@ export const VoiceChat = () => {
 
       if (data.type === 'ready') {
         applyServerStateRef.current?.(data);
+
+        if (data.submission_status === 'submitted' || data.submission_status === 'completed') {
+          setChatMessages([]);
+          stopSpeechRef.current?.();
+          stopListeningRef.current?.();
+          return;
+        }
 
         const initialMessages = [];
         const fieldsList = data.fields || [];
@@ -362,15 +372,7 @@ export const VoiceChat = () => {
           }
         });
 
-        if (data.submission_status === 'submitted') {
-          hasAddedCompletedMsgRef.current = true;
-          initialMessages.push({
-            sender: 'bot',
-            text: getTranslation(currentLang, 'submitted_lock_msg'),
-            lang: currentLang
-          });
-          setChatMessages(initialMessages);
-        } else if (data.all_answered || data.mode === 'review') {
+        if (data.all_answered || data.mode === 'review') {
           hasAddedCompletedMsgRef.current = true;
           initialMessages.push({
             sender: 'bot',
@@ -481,9 +483,9 @@ export const VoiceChat = () => {
         setSubmitting(false);
         setReviewModalOpen(false);
         setSuccessModalOpen(true);
-        const submittedMsg = getTranslation(currentLang, 'submitted_success_msg');
-        setChatMessages((prev) => [...prev, { sender: 'bot', text: submittedMsg, lang: currentLang }]);
-        speakRef.current?.(submittedMsg, currentLang);
+        setChatMessages([]);
+        stopSpeechRef.current?.();
+        stopListeningRef.current?.();
       }
 
       else if (data.type === 'error') {
@@ -722,214 +724,274 @@ export const VoiceChat = () => {
       )}
 
       {/* Main Container */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex gap-6 overflow-hidden">
-        {/* LEFT COLUMN: Conversation Thread & Controls */}
-        <div className="flex-1 bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl sheet-shadow flex flex-col overflow-hidden relative">
-          {/* Single Form Header without duplicated title */}
-          <div className="p-4 sm:p-5 border-b border-[#D6CCC2] flex items-center justify-between bg-[#F5EBE0] shrink-0">
-            <div className="flex items-center space-x-3">
-              <Link
-                to="/user"
-                className="p-2 text-[#524E4A] hover:text-[#1C1917] hover:bg-[#E3D5CA] rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
-                aria-label={t('btn_back_to_forms')}
-                title={t('btn_back_to_forms')}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
+      {isSubmitted ? (
+        <div className="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-5 md:p-6 flex flex-col overflow-y-auto">
+          {/* Header Card */}
+          <div className="bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl sheet-shadow p-5 sm:p-6 mb-4 sm:mb-6 shrink-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#D6CCC2]">
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/user#my-submissions"
+                  className="p-2 text-[#524E4A] hover:text-[#1C1917] hover:bg-[#E3D5CA] rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
+                  aria-label={t('btn_back_to_forms')}
+                  title={t('btn_back_to_forms')}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold font-display text-[#1C1917] tracking-tight">
+                    {formTitle}
+                  </h1>
+                  <p className="text-sm text-[#524E4A] font-body">
+                    {brandConfig.officeName || 'Citizen Service Centre'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <span className="inline-flex items-center px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold bg-[#15803D]/10 text-[#15803D] border border-[#15803D]/20">
+                  <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                  {t('stamp_submitted') || 'SUBMITTED'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3.5 py-1.5 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] text-xs sm:text-sm font-semibold rounded-md transition-colors cursor-pointer min-h-[38px] flex items-center space-x-1.5"
+                  title="Print Application"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Official Notice Banner */}
+            <div className="mt-4 p-4 bg-[#E3D5CA]/50 border border-[#D6CCC2] rounded-lg flex items-start space-x-3 text-sm text-[#1C1917]">
+              <CheckCircle2 className="w-5 h-5 text-[#15803D] shrink-0 mt-0.5" />
               <div>
-                <h1 className="text-lg sm:text-xl font-bold font-display text-[#1C1917] tracking-tight truncate max-w-[280px] sm:max-w-md">
-                  {formTitle}
-                </h1>
-                <p className="text-sm text-[#524E4A] font-body">
-                  {submissionStatus === 'submitted'
-                    ? t('submitted_lock_msg')
-                    : mode === 'editing' && activeEditingField
+                <p className="font-semibold text-sm sm:text-base text-[#1C1917]">
+                  {t('submitted_lock_msg')}
+                </p>
+                <p className="text-xs text-[#524E4A] mt-1">
+                  Submission ID #{submissionId} • Read-only ledger
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Answers Sheet - Prominently Displayed */}
+          <div className="flex-1 min-h-[460px] bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl sheet-shadow p-2 sm:p-4 mb-4 sm:mb-6">
+            <Sheet
+              fields={fields}
+              answers={answers}
+              currentFieldId={null}
+              editingFieldId={null}
+              mode="review"
+              allAnswered={true}
+              submissionStatus={submissionStatus}
+              submitting={false}
+              onSubmit={() => {}}
+              onGotoField={() => {}}
+              uiLang={uiLang}
+            />
+          </div>
+
+          {/* Quick Nav Actions */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-8 shrink-0">
+            <Link
+              to="/user#my-submissions"
+              className="w-full sm:w-auto px-6 py-3 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-sm rounded-lg transition-colors flex items-center justify-center min-h-[44px]"
+            >
+              ← {t('success_btn_my_apps') || 'Back to My Applications'}
+            </Link>
+            <Link
+              to="/user"
+              className="w-full sm:w-auto px-6 py-3 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] font-semibold text-sm rounded-lg transition-colors flex items-center justify-center min-h-[44px]"
+            >
+              {t('btn_back_to_forms') || 'Start Another Form'}
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 md:p-6 flex gap-6 overflow-hidden">
+          {/* LEFT COLUMN: Conversation Thread & Controls */}
+          <div className="flex-1 bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl sheet-shadow flex flex-col overflow-hidden relative">
+            {/* Single Form Header without duplicated title */}
+            <div className="p-4 sm:p-5 border-b border-[#D6CCC2] flex items-center justify-between bg-[#F5EBE0] shrink-0">
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/user"
+                  className="p-2 text-[#524E4A] hover:text-[#1C1917] hover:bg-[#E3D5CA] rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
+                  aria-label={t('btn_back_to_forms')}
+                  title={t('btn_back_to_forms')}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+                <div>
+                  <h1 className="text-lg sm:text-xl font-bold font-display text-[#1C1917] tracking-tight truncate max-w-[280px] sm:max-w-md">
+                    {formTitle}
+                  </h1>
+                  <p className="text-sm text-[#524E4A] font-body">
+                    {mode === 'editing' && activeEditingField
                       ? `${t('sheet_editing')}: ${activeEditingField.field_name.replace(/_/g, ' ')}`
                       : isCompleted
                         ? t('chat_status_all_answered')
                         : currentField
                           ? t('chat_status_progress', { current: currentIndex + 1, total: fields.length })
                           : t('appName')}
-                </p>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={(e) => e.target.files && handleUploadFile(e.target.files[0])}
+                  accept=".pdf,.docx"
+                  className="hidden"
+                />
+                {!isCompleted && (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={docUploading}
+                    className="px-3.5 py-2 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] text-sm font-semibold rounded-md flex items-center space-x-2 transition-colors cursor-pointer min-h-[44px]"
+                    title="Upload supporting document"
+                  >
+                    <Upload className="w-4 h-4 text-[#1F3FBF]" />
+                    <span className="hidden sm:inline">Upload document</span>
+                  </button>
+                )}
+
+                {/* Developer <> icon: Hidden for citizens; shown only for admin or debug flag */}
+                {(isAdmin || (isDev && new URLSearchParams(window.location.search).get('debug') === '1')) && (
+                  <button
+                    type="button"
+                    onClick={() => setDebugPanelOpen(!debugPanelOpen)}
+                    className="p-2.5 text-[#524E4A] hover:text-[#1F3FBF] rounded-md text-sm font-mono cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
+                    title="Toggle developer debug panel"
+                    aria-label="Toggle debug panel"
+                  >
+                    <Code className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={(e) => e.target.files && handleUploadFile(e.target.files[0])}
-                accept=".pdf,.docx"
-                className="hidden"
-              />
-              {submissionStatus !== 'submitted' && !isCompleted && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={docUploading}
-                  className="px-3.5 py-2 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] text-sm font-semibold rounded-md flex items-center space-x-2 transition-colors cursor-pointer min-h-[44px]"
-                  title="Upload supporting document"
-                >
-                  <Upload className="w-4 h-4 text-[#1F3FBF]" />
-                  <span className="hidden sm:inline">Upload document</span>
-                </button>
-              )}
+            {/* Active Field Edit Banner */}
+            {mode === 'editing' && activeEditingField && (
+              <div className="p-3 bg-[#E3D5CA]/50 border-b border-[#D6CCC2] shrink-0">
+                <EditBanner
+                  fieldName={activeEditingField.field_name}
+                  onCancel={handleCancelEditing}
+                  uiLang={uiLang}
+                />
+              </div>
+            )}
 
-              {/* Developer <> icon: Hidden for citizens; shown only for admin or debug flag */}
-              {(isAdmin || (isDev && new URLSearchParams(window.location.search).get('debug') === '1')) && (
-                <button
-                  type="button"
-                  onClick={() => setDebugPanelOpen(!debugPanelOpen)}
-                  className="p-2.5 text-[#524E4A] hover:text-[#1F3FBF] rounded-md text-sm font-mono cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
-                  title="Toggle developer debug panel"
-                  aria-label="Toggle debug panel"
-                >
-                  <Code className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          </div>
+            {/* Undo Toast */}
+            {undoToast && (
+              <div className="px-4 pt-3 shrink-0">
+                <Toast
+                  message={`Updated ${undoToast.fieldName}.`}
+                  onUndo={handleUndo}
+                  uiLang={uiLang}
+                />
+              </div>
+            )}
 
-          {/* Active Field Edit Banner */}
-          {mode === 'editing' && activeEditingField && (
-            <div className="p-3 bg-[#E3D5CA]/50 border-b border-[#D6CCC2] shrink-0">
-              <EditBanner
-                fieldName={activeEditingField.field_name}
-                onCancel={handleCancelEditing}
-                uiLang={uiLang}
-              />
-            </div>
-          )}
-
-          {/* Undo Toast */}
-          {undoToast && (
-            <div className="px-4 pt-3 shrink-0">
-              <Toast
-                message={`Updated ${undoToast.fieldName}.`}
-                onUndo={handleUndo}
-                uiLang={uiLang}
-              />
-            </div>
-          )}
-
-          {/* Chat Messages Log */}
-          <div
-            ref={chatContainerRef}
-            onScroll={handleChatScroll}
-            role="log"
-            aria-live="polite"
-            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 pb-8"
-          >
-            {chatMessages.map((msg, idx) => (
-              <ConversationMessage
-                key={idx}
-                message={msg}
-                onRetryVoice={submissionStatus === 'submitted' ? undefined : () => handleMicTap()}
-              />
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-
-          {/* Jump to latest floating button */}
-          {isScrolledUp && (
-            <button
-              type="button"
-              onClick={() => scrollToBottom('smooth')}
-              className="absolute bottom-24 right-6 z-20 px-4 py-2 bg-[#1C1917] text-[#F5EBE0] text-sm font-semibold rounded-full shadow-lg flex items-center space-x-1.5 hover:bg-[#1C1917]/90 transition-all cursor-pointer min-h-[44px] focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
-              aria-label={t('chat_jump_latest')}
+            {/* Chat Messages Log */}
+            <div
+              ref={chatContainerRef}
+              onScroll={handleChatScroll}
+              role="log"
+              aria-live="polite"
+              className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 pb-8"
             >
-              <span>{t('chat_jump_latest')}</span>
-              <ArrowDown className="w-4 h-4" />
-            </button>
-          )}
+              {chatMessages.map((msg, idx) => (
+                <ConversationMessage
+                  key={idx}
+                  message={msg}
+                  onRetryVoice={() => handleMicTap()}
+                />
+              ))}
+              <div ref={chatEndRef} />
+            </div>
 
-          {/* Action Area: Completed Bar OR Voice & Text Composer */}
-          <div className="p-4 sm:p-5 border-t border-[#D6CCC2] bg-[#F5EBE0] shrink-0 space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            {isCompleted ? (
-              /* Compact Completion Bar: replaces mic & live input when all answered */
-              <div className="bg-[#E3D5CA]/70 border border-[#D6CCC2] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-center space-x-3 w-full sm:w-auto">
-                  <div className="w-10 h-10 rounded-full bg-[#15803D]/10 text-[#15803D] flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
+            {/* Jump to latest floating button */}
+            {isScrolledUp && (
+              <button
+                type="button"
+                onClick={() => scrollToBottom('smooth')}
+                className="absolute bottom-24 right-6 z-20 px-4 py-2 bg-[#1C1917] text-[#F5EBE0] text-sm font-semibold rounded-full shadow-lg flex items-center space-x-1.5 hover:bg-[#1C1917]/90 transition-all cursor-pointer min-h-[44px] focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
+                aria-label={t('chat_jump_latest')}
+              >
+                <span>{t('chat_jump_latest')}</span>
+                <ArrowDown className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Action Area: Completed Bar OR Voice & Text Composer */}
+            <div className="p-4 sm:p-5 border-t border-[#D6CCC2] bg-[#F5EBE0] shrink-0 space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              {isCompleted ? (
+                /* Compact Completion Bar: replaces mic & live input when all answered */
+                <div className="bg-[#E3D5CA]/70 border border-[#D6CCC2] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+                  <div className="flex items-center space-x-3 w-full sm:w-auto">
+                    <div className="w-10 h-10 rounded-full bg-[#15803D]/10 text-[#15803D] flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold text-[#1C1917] font-body leading-tight">
+                        {t('completed_status_title')}
+                      </h2>
+                      <p className="text-sm text-[#524E4A] font-body mt-0.5">
+                        {t('completed_status_desc')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-base font-bold text-[#1C1917] font-body leading-tight">
-                      {t('completed_status_title')}
-                    </h2>
-                    <p className="text-sm text-[#524E4A] font-body mt-0.5">
-                      {t('completed_status_desc')}
-                    </p>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
+                    <button
+                      ref={submitTriggerRef}
+                      type="button"
+                      onClick={() => setReviewModalOpen(true)}
+                      className="flex-1 sm:flex-none px-6 py-3 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-base rounded-lg transition-colors cursor-pointer min-h-[48px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
+                    >
+                      {t('btn_review_and_submit')}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fields.length > 0) {
+                          handleGotoField(fields[0].id);
+                        }
+                      }}
+                      className="flex-1 sm:flex-none px-4 py-3 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] font-semibold text-sm rounded-lg transition-colors cursor-pointer min-h-[48px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
+                    >
+                      {t('btn_change_answer')}
+                    </button>
                   </div>
                 </div>
+              ) : (
+                /* Composer Area: 64px Mic, Text Input, and Send Button on one row at desktop */
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                    {/* Single Row at desktop: MicControl + Form Input */}
+                    <div className="flex-1 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full">
+                      <MicControl
+                        vadState={vadState}
+                        isListening={isListening}
+                        permissionState={permissionState}
+                        micError={micError}
+                        isDisabled={false}
+                        onTapMic={handleMicTap}
+                        onRetryMic={handleMicTap}
+                        uiLang={uiLang}
+                      />
 
-                <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
-                  <button
-                    ref={submitTriggerRef}
-                    type="button"
-                    onClick={() => setReviewModalOpen(true)}
-                    className="flex-1 sm:flex-none px-6 py-3 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-base rounded-lg transition-colors cursor-pointer min-h-[48px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
-                  >
-                    {t('btn_review_and_submit')}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (fields.length > 0) {
-                        handleGotoField(fields[0].id);
-                      }
-                    }}
-                    className="flex-1 sm:flex-none px-4 py-3 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] font-semibold text-sm rounded-lg transition-colors cursor-pointer min-h-[48px] flex items-center justify-center focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
-                  >
-                    {t('btn_change_answer')}
-                  </button>
-                </div>
-              </div>
-            ) : submissionStatus === 'submitted' ? (
-              /* Locked/Submitted Notice Bar */
-              <div className="bg-[#E3D5CA]/70 border border-[#D6CCC2] rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-center space-x-3 w-full sm:w-auto">
-                  <div className="w-10 h-10 rounded-full bg-[#15803D]/10 text-[#15803D] flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-bold text-[#1C1917] font-body leading-tight">
-                      {t('stamp_submitted') || 'Submitted Application'}
-                    </h2>
-                    <p className="text-sm text-[#524E4A] font-body mt-0.5">
-                      {t('submitted_lock_msg')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 w-full sm:w-auto shrink-0">
-                  <Link
-                    to="/user#my-submissions"
-                    className="px-5 py-3 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-sm rounded-lg transition-colors flex items-center justify-center min-h-[44px]"
-                  >
-                    {t('success_btn_my_apps') || 'My Applications'}
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              /* Composer Area: 64px Mic, Text Input, and Send Button on one row at desktop */
-              <div className="space-y-3">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-                  {/* Single Row at desktop: MicControl + Form Input */}
-                  <div className="flex-1 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full">
-                    <MicControl
-                      vadState={vadState}
-                      isListening={isListening}
-                      permissionState={permissionState}
-                      micError={micError}
-                      isDisabled={submissionStatus === 'submitted'}
-                      onTapMic={handleMicTap}
-                      onRetryMic={handleMicTap}
-                      uiLang={uiLang}
-                    />
-
-                    {/* Text Input & Send */}
-                    {submissionStatus !== 'submitted' && (
+                      {/* Text Input & Send */}
                       <form onSubmit={handleSendText} className="flex-1 flex items-center gap-2 w-full">
                         <input
                           ref={inputRef}
@@ -941,79 +1003,81 @@ export const VoiceChat = () => {
                         />
                         <button
                           type="submit"
-                          disabled={!textInput.trim() || submissionStatus === 'submitted'}
+                          disabled={!textInput.trim()}
                           className="h-12 px-6 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-sm rounded-lg transition-colors disabled:bg-[#D6CCC2] disabled:text-[#524E4A] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer min-h-[48px] focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
                         >
                           {t('btn_send')}
                         </button>
                       </form>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Mobile Drawer Toggle */}
-                  <button
-                    type="button"
-                    onClick={() => setDrawerOpen(true)}
-                    className="lg:hidden w-full sm:w-auto py-2.5 px-3.5 border border-[#D6CCC2] bg-[#F5EBE0] hover:bg-[#E3D5CA] rounded-lg text-sm text-[#1C1917] font-semibold flex items-center justify-between space-x-3 min-h-[44px]"
-                  >
-                    <span>{t('panel_title_answers')}</span>
-                    <span className="text-[#1F3FBF] flex items-center space-x-1 font-medium">
-                      <span>{t('sheet_progress', { answered: answeredCount, total: fields.length })}</span>
-                      <ChevronUp className="w-4 h-4 ml-1" />
-                    </span>
-                  </button>
+                    {/* Mobile Drawer Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setDrawerOpen(true)}
+                      className="lg:hidden w-full sm:w-auto py-2.5 px-3.5 border border-[#D6CCC2] bg-[#F5EBE0] hover:bg-[#E3D5CA] rounded-lg text-sm text-[#1C1917] font-semibold flex items-center justify-between space-x-3 min-h-[44px]"
+                    >
+                      <span>{t('panel_title_answers')}</span>
+                      <span className="text-[#1F3FBF] flex items-center space-x-1 font-medium">
+                        <span>{t('sheet_progress', { answered: answeredCount, total: fields.length })}</span>
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      </span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: The Side Panel (Desktop Only) */}
+          <div className="hidden lg:block w-[380px] xl:w-[420px] shrink-0 h-full">
+            <Sheet
+              fields={fields}
+              answers={answers}
+              currentFieldId={currentField?.id}
+              editingFieldId={editingFieldId}
+              mode={mode}
+              allAnswered={allAnswered}
+              submissionStatus={submissionStatus}
+              submitting={submitting}
+              onSubmit={() => setReviewModalOpen(true)}
+              onGotoField={handleGotoField}
+              uiLang={uiLang}
+            />
           </div>
         </div>
-
-        {/* RIGHT COLUMN: The Side Panel (Desktop Only) */}
-        <div className="hidden lg:block w-[380px] xl:w-[420px] shrink-0 h-full">
-          <Sheet
-            fields={fields}
-            answers={answers}
-            currentFieldId={currentField?.id}
-            editingFieldId={editingFieldId}
-            mode={mode}
-            allAnswered={allAnswered}
-            submissionStatus={submissionStatus}
-            submitting={submitting}
-            onSubmit={() => setReviewModalOpen(true)}
-            onGotoField={handleGotoField}
-            uiLang={uiLang}
-          />
-        </div>
-      </div>
+      )}
 
       {/* Mobile Answers Bottom Drawer */}
-      <Drawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        title={t('panel_title_answers')}
-      >
-        <div className="h-[65dvh]">
-          <Sheet
-            fields={fields}
-            answers={answers}
-            currentFieldId={currentField?.id}
-            editingFieldId={editingFieldId}
-            mode={mode}
-            allAnswered={allAnswered}
-            submissionStatus={submissionStatus}
-            submitting={submitting}
-            onSubmit={() => {
-              setDrawerOpen(false);
-              setReviewModalOpen(true);
-            }}
-            onGotoField={(fId) => {
-              handleGotoField(fId);
-              setDrawerOpen(false);
-            }}
-            uiLang={uiLang}
-          />
-        </div>
-      </Drawer>
+      {!isSubmitted && (
+        <Drawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          title={t('panel_title_answers')}
+        >
+          <div className="h-[65dvh]">
+            <Sheet
+              fields={fields}
+              answers={answers}
+              currentFieldId={currentField?.id}
+              editingFieldId={editingFieldId}
+              mode={mode}
+              allAnswered={allAnswered}
+              submissionStatus={submissionStatus}
+              submitting={submitting}
+              onSubmit={() => {
+                setDrawerOpen(false);
+                setReviewModalOpen(true);
+              }}
+              onGotoField={(fId) => {
+                handleGotoField(fId);
+                setDrawerOpen(false);
+              }}
+              uiLang={uiLang}
+            />
+          </div>
+        </Drawer>
+      )}
 
       {/* Debug Panel (Only when DEV or ?debug=1) */}
       {isDev && debugPanelOpen && (
