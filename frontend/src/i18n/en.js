@@ -12,6 +12,8 @@ export const en = {
   language_en: "English",
   language_ta: "தமிழ்",
   speech_toggle_label: "Read questions aloud",
+  speech_toggle_on: "Read aloud: On",
+  speech_toggle_off: "Read aloud: Off",
   role_citizen: "Citizen",
   role_operator: "Help-desk operator",
   role_kiosk: "Kiosk device",
@@ -20,6 +22,7 @@ export const en = {
   // Non-Official Disclaimer
   non_official_disclaimer: "This is an application helper and not an official government portal.",
   disclaimer_short: "Application helper — Not an official government portal.",
+  disclaimer_banner: "Application helper — Not an official government portal.",
 
   // Login & Register
   login_title: "Sign in to {appName}",
@@ -88,23 +91,83 @@ export const en = {
   // Voice Form & Sheet
   welcome_msg: "Hello. I'll help you complete {title}. I'll ask one question at a time. You can speak or type, and you can change any answer before you submit.",
   review_stage_msg: "All questions answered. Please check your answers, change anything if needed, then submit.",
+  completed_stage_msg: "All questions answered! You can review and submit your application, or tap any answer to change it.",
   submitted_lock_msg: "This application has been completed and is locked.",
+  submitted_success_msg: "Form submitted successfully. Your answers have been recorded.",
+
+  // Mic control states & labels
   mic_idle: "Tap to speak",
+  mic_requesting_permission: "Allow microphone access",
   mic_listening: "Listening",
-  mic_processing: "Checking what I heard",
+  mic_listening_tap_to_stop: "Listening... tap to stop",
+  mic_processing: "Understanding your answer...",
   mic_blocked: "Microphone access is blocked. Allow access in your browser or type your answer.",
-  type_placeholder: "Type your answer here",
+  mic_error_denied: "Microphone permission denied. Allow access in browser settings.",
+  mic_error_no_speech: "No speech detected. Please speak clearly into the mic.",
+  mic_error_network: "Voice processing failed. Check connection or try typing.",
+  mic_try_again: "Try again",
+  mic_typing_hint: "You can also type your answer in the box below.",
+  lang_active_badge: "Recognizing: {lang}",
+  tts_ta_missing_notice: "Tamil voice synthesizer not found on this device. Questions will be displayed as text.",
+
+  // Composer & controls
+  type_placeholder: "Type your answer here...",
   btn_send: "Send",
   btn_back: "Previous question",
+  btn_back_to_forms: "Back to forms",
   btn_undo: "Undo",
   btn_cancel: "Cancel",
-  btn_submit: "Submit application",
+  btn_submit: "Review and submit",
   btn_submitted: "Application submitted",
+  btn_review_and_submit: "Review and submit",
+  btn_change_answer: "Change an answer",
+  completed_status_title: "All questions answered",
+  completed_status_desc: "You can review and submit, or tap any answer to change it.",
+
+  // Stamp & side panel
   stamp_received: "RECEIVED",
+  stamp_submitted: "SUBMITTED",
   sheet_title: "Citizen Service Application",
+  panel_title_answers: "Your answers",
   sheet_progress: "{answered} of {total} answered",
   sheet_unfilled: "Not answered yet",
   sheet_editing: "Editing answer",
+  chat_jump_latest: "Jump to latest",
+  chat_status_progress: "Question {current} of {total}",
+  chat_status_all_answered: "All answered",
+  chat_transcribed_you_said: "You answered:",
+  chat_retry_voice: "Re-record",
+
+  // Review Modal
+  review_modal_title: "Review your application",
+  review_modal_subtitle: "Please check all answers below before final submission.",
+  review_missing_warning: "Some questions have not been answered yet. Please answer all questions before submitting.",
+  review_field_unanswered: "Not answered yet",
+  review_locked_notice: "Important: Once submitted, your application is locked and cannot be changed.",
+  review_btn_confirm: "Confirm and submit",
+  review_btn_back: "Back",
+  review_btn_submitting: "Submitting application...",
+  review_edit_action: "Edit",
+  review_edit_aria: "Edit {field}",
+  review_error_title: "Failed to submit application",
+  review_btn_retry: "Retry submission",
+
+  // Success Screen
+  success_title: "Application submitted successfully",
+  success_ref_label: "Application reference number",
+  success_ref_hint: "Keep this reference number safe for tracking your application with the department.",
+  success_btn_copy: "Copy reference",
+  success_copied: "Copied!",
+  success_btn_my_apps: "My Applications",
+  success_btn_start_another: "Start another application",
+
+  // Edit Flow
+  edit_reask_intro: "Let's change your {field}. Current answer: \"{currentValue}\". What is the new answer?",
+  edit_banner_label: "Changing {field}. Say or type the new answer.",
+  edit_btn_cancel: "Cancel change",
+  edit_row_aria: "Edit {label}",
+  status_just_updated: "Updated",
+  status_missing: "Needs answer",
 
   // Camera & Documents
   take_photo_doc: "Take a photo of your document",

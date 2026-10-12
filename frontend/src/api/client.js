@@ -81,8 +81,34 @@ export const adminFormsApi = {
     const query = versionId ? `?version_id=${versionId}` : '';
     return apiRequest(`/admin/forms/${formId}/submissions${query}`);
   },
-  getCSVUrl: (formId, versionId) => {
+  downloadExcel: async (formId, versionId) => {
+    const token = localStorage.getItem('voiceform_token');
     const query = versionId ? `?version_id=${versionId}` : '';
+    const res = await fetch(`/admin/forms/${formId}/submissions.xlsx${query}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to export Excel file');
+    }
+    return res.blob();
+  },
+  getExcelUrl: (formId, versionId) => {
+    const token = localStorage.getItem('voiceform_token');
+    const params = new URLSearchParams();
+    if (versionId) params.append('version_id', versionId);
+    if (token) params.append('token', token);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return `/admin/forms/${formId}/submissions.xlsx${query}`;
+  },
+  getCSVUrl: (formId, versionId) => {
+    const token = localStorage.getItem('voiceform_token');
+    const params = new URLSearchParams();
+    if (versionId) params.append('version_id', versionId);
+    if (token) params.append('token', token);
+    const query = params.toString() ? `?${params.toString()}` : '';
     return `/admin/forms/${formId}/submissions.csv${query}`;
   },
 };

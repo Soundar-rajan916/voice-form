@@ -1,72 +1,75 @@
-/* 1. Display & Heading Font: Khand */
-@import "@fontsource/khand/400.css";
-@import "@fontsource/khand/500.css";
+/* Display & Logo Font: Khand */
 @import "@fontsource/khand/600.css";
 @import "@fontsource/khand/700.css";
 
-/* 2. Subheading & Accent Font: Nobile */
-@import "@fontsource/nobile/400.css";
-@import "@fontsource/nobile/500.css";
-@import "@fontsource/nobile/700.css";
+/* Body & UI Font: Noto Sans */
+@import "@fontsource/noto-sans/400.css";
+@import "@fontsource/noto-sans/500.css";
+@import "@fontsource/noto-sans/600.css";
+@import "@fontsource/noto-sans/700.css";
 
-/* 3. Body & UI Font: Anaheim */
-@import "@fontsource/anaheim/400.css";
-@import "@fontsource/anaheim/500.css";
-@import "@fontsource/anaheim/600.css";
-@import "@fontsource/anaheim/700.css";
-
-/* Tamil Script Fallback */
-@import "@fontsource/noto-serif-tamil/400.css";
-@import "@fontsource/noto-serif-tamil/600.css";
-@import "@fontsource/noto-serif-tamil/700.css";
+/* Tamil Font: Noto Sans Tamil */
+@import "@fontsource/noto-sans-tamil/400.css";
+@import "@fontsource/noto-sans-tamil/500.css";
+@import "@fontsource/noto-sans-tamil/600.css";
+@import "@fontsource/noto-sans-tamil/700.css";
 
 @import "tailwindcss";
 
 @theme {
+  --color-parchment: #EDEDE9;
+  --color-linen: #F5EBE0;
+  --color-powder-petal: #E3D5CA;
+  --color-dust-grey: #D6CCC2;
+  --color-almond-silk: #D5BDAF;
+
+  --color-text-primary: #1C1917;
+  --color-text-secondary: #524E4A;
+  --color-action-blue: #1F3FBF;
+  --color-success: #15803D;
+  --color-warning: #9A3412;
+  --color-danger: #B3261E;
+
+  /* Backward compatibility alias tokens */
   --color-sheet: #F5EBE0;
   --color-counter: #D6CCC2;
   --color-highlighter: #D5BDAF;
-  --color-parchment: #EDEDE9;
   --color-petal: #E3D5CA;
-  --color-charcoal: #23272F;
+  --color-charcoal: #1C1917;
   --color-pen-blue: #1F3FBF;
-  --color-stamp-violet: #5B2A86;
+  --color-stamp-violet: #1F3FBF;
   --color-error: #B3261E;
 
-  --font-heading: 'Khand', 'Noto Serif Tamil', sans-serif;
-  --font-subheading: 'Nobile', 'Noto Serif Tamil', sans-serif;
-  --font-body: 'Anaheim', 'Noto Serif Tamil', sans-serif;
-  --font-serif: 'Khand', 'Noto Serif Tamil', sans-serif;
-  --font-sans: 'Anaheim', 'Noto Serif Tamil', sans-serif;
-  --font-sans-ui: 'Anaheim', 'Noto Serif Tamil', sans-serif;
+  --font-display: 'Khand', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Noto Sans', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Khand', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Khand', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Noto Sans', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
+  --font-sans-ui: 'Noto Sans', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
   :root {
-    /* Font Family Stacks */
-    --font-heading: 'Khand', 'Noto Serif Tamil', sans-serif;
-    --font-subheading: 'Nobile', 'Noto Serif Tamil', sans-serif;
-    --font-body: 'Anaheim', 'Noto Serif Tamil', sans-serif;
+    --color-parchment: #EDEDE9;
+    --color-linen: #F5EBE0;
+    --color-powder-petal: #E3D5CA;
+    --color-dust-grey: #D6CCC2;
+    --color-almond-silk: #D5BDAF;
 
-    /* Surfaces: from your new palette */
-    --color-sheet: #F5EBE0;        /* Linen – form background, character boxes, paper sheets */
-    --color-counter: #D6CCC2;      /* Dust Grey – desk background, ruled lines, borders */
-    --color-highlighter: #D5BDAF;  /* Almond Silk – active guided row during voice input */
+    --color-text-primary: #1C1917;
+    --color-text-secondary: #524E4A;
+    --color-action-blue: #1F3FBF;
+    --color-success: #15803D;
+    --color-warning: #9A3412;
+    --color-danger: #B3261E;
 
-    /* Extra tokens for the remaining two colors */
-    --color-parchment: #EDEDE9;    /* page/desk wash, input and character-box fill */
-    --color-petal: #E3D5CA;        /* hover states, disabled fields, subtle panels */
-
-    /* Kept: your new palette has no dark or saturated colors */
-    --color-charcoal: #23272F;     /* primary text */
-    --color-pen-blue: #1F3FBF;     /* citizen answers / ink */
-    --color-stamp-violet: #5B2A86; /* primary CTAs, focus rings, "Received" stamp */
-    --color-error: #B3261E;        /* validation errors */
+    --font-display: 'Khand', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Noto Sans', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
 
     font-family: var(--font-body);
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1.5;
-    color: var(--color-charcoal);
+    color: var(--color-text-primary);
     background-color: var(--color-parchment);
   }
 
@@ -76,186 +79,114 @@
     min-height: 100dvh;
     font-family: var(--font-body);
     background-color: var(--color-parchment);
-    color: var(--color-charcoal);
+    color: var(--color-text-primary);
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
-    letter-spacing: 0.01em;
+  /* Display typeface reserved for page titles and logo */
+  h1, .page-title, .brand-logo {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
   }
 
-  /* Tamil enlarged about 6% with line-height at least 1.6 */
-  [lang="ta"], .tamil-text {
-    font-size: 1.06em;
-    line-height: 1.65;
+  /* Tamil font applied automatically when lang is ta or has tamil-text class */
+  [lang="ta"], .tamil-text, html[lang="ta"] body {
+    font-family: 'Noto Sans Tamil', 'Noto Sans', sans-serif !important;
+    line-height: 1.6;
   }
 }
 
-/* Kiosk Base Typography (>=22px) */
-.kiosk-mode {
-  font-size: 22px;
-  line-height: 1.55;
-  font-family: var(--font-body);
-}
-
-.kiosk-mode [lang="ta"], .kiosk-mode .tamil-text {
-  font-size: 1.08em;
-  line-height: 1.7;
-}
-
-/* Font Pairing Utility Classes */
-.font-heading,
-.font-khand,
-.font-serif,
-.font-serif-printed {
-  font-family: var(--font-heading) !important;
-}
-
-.font-subheading,
-.font-nobile,
-.font-editorial {
-  font-family: var(--font-subheading) !important;
+/* Typography Utility Classes */
+.font-display,
+.font-khand {
+  font-family: var(--font-display) !important;
 }
 
 .font-body,
-.font-anaheim,
 .font-sans,
-.font-sans-ui,
-.font-sans-counter {
+.font-sans-ui {
   font-family: var(--font-body) !important;
 }
 
-/* The Paper Sheet - Ruled rows, paper white */
-.paper-sheet {
-  background-color: var(--color-sheet);
-  border: 1px solid var(--color-counter);
-  border-radius: 4px;
-}
-
-/* Ruled paper line */
-.ruled-row {
-  border-bottom: 1px solid var(--color-counter);
-}
-
-/* Answers in pen blue */
-.pen-blue-text {
-  color: var(--color-pen-blue);
+/* Section label: small caps with body font instead of monospace */
+.section-label {
+  font-family: var(--font-body);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.08em;
   font-weight: 600;
+  font-size: 14px;
 }
 
-/* Active Row Highlighter */
-.active-highlighter-row {
-  background-color: var(--color-highlighter) !important;
-  transition: background-color 200ms ease-in-out;
+/* Chat text specifications */
+.chat-user-text {
+  font-size: 18px;
+  line-height: 1.5;
 }
 
-/* Rubber "Received" stamp in Stamp Violet #5B2A86 */
-.stamp-received {
-  border: 3.5px solid var(--color-stamp-violet);
-  color: var(--color-stamp-violet);
-  font-family: 'Hind Madurai', sans-serif;
+.chat-bot-question {
+  font-size: 20px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* Custom Scrollbars styled to the palette */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-dust-grey) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-dust-grey);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-almond-silk);
+}
+
+/* Accessible focus ring */
+*:focus-visible {
+  outline: 2px solid var(--color-action-blue) !important;
+  outline-offset: 2px !important;
+}
+
+/* Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Sheet shadow */
+.sheet-shadow {
+  box-shadow: 0 4px 16px -2px rgba(28, 25, 23, 0.06), 0 2px 4px -2px rgba(28, 25, 23, 0.04);
+}
+
+/* Received / Submitted Rubber Stamp */
+.stamp-overlay {
+  border: 3px solid var(--color-action-blue);
+  color: var(--color-action-blue);
+  font-family: var(--font-display);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  transform: rotate(-5deg);
+  letter-spacing: 0.1em;
+  transform: rotate(-6deg);
   border-radius: 6px;
-  background-color: var(--color-sheet);
+  background-color: var(--color-linen);
   display: inline-block;
-  padding: 8px 16px;
-  box-shadow: 0 0 0 1px var(--color-stamp-violet);
-}
-
-/* Boxed Character Cells (one character per box) - deliberate nod to paper forms */
-.boxed-cells {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.boxed-char {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 40px;
-  border: 1.5px solid var(--color-charcoal);
-  background-color: var(--color-sheet);
-  font-family: monospace;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-charcoal);
-  border-radius: 2px;
-}
-
-.kiosk-boxed-char {
-  width: 40px;
-  height: 50px;
-  font-size: 24px;
-  border: 2px solid var(--color-charcoal);
-}
-
-/* Touch Target Minimum (>= 64px for kiosk buttons) */
-.touch-target-64 {
-  min-height: 64px;
-  min-width: 64px;
-}
-
-/* Focus Rings in Stamp Violet */
-*:focus-visible {
-  outline: 3px solid var(--color-stamp-violet);
-  outline-offset: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stamp-received,
-  .active-highlighter-row,
-  * {
-    transition: none !important;
-    animation: none !important;
-  }
-}
-
-/* Print CSS */
-@media print {
-  body {
-    background: none !important;
-    color: #000 !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .print-only {
-    display: block !important;
-  }
-
-  /* 80mm thermal receipt slip */
-  .receipt-slip-80mm {
-    width: 78mm !important;
-    max-width: 78mm !important;
-    margin: 0 auto !important;
-    padding: 6mm !important;
-    font-size: 13px !important;
-    line-height: 1.35 !important;
-    border: none !important;
-  }
-
-  .receipt-slip-80mm .boxed-char {
-    width: 20px !important;
-    height: 24px !important;
-    font-size: 13px !important;
-    border-width: 1px !important;
-  }
-
-  /* Full A4 Application copy */
-  .application-a4-copy {
-    width: 100% !important;
-    max-width: 190mm !important;
-    margin: 0 auto !important;
-    padding: 15mm !important;
-    font-size: 15px !important;
-    border: none !important;
-  }
+  padding: 6px 14px;
+  box-shadow: 0 0 0 1px var(--color-action-blue);
 }

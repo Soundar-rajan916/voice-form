@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-export const useSpeech = (enabled = true) => {
+export const useSpeech = (enabled = true, onTamilVoiceMissing = null) => {
   const [voices, setVoices] = useState([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const warnedMissingTamilRef = useRef(false);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
@@ -26,6 +27,8 @@ export const useSpeech = (enabled = true) => {
     };
   }, []);
 
+  const hasTamilVoice = voices.some((v) => v.lang && v.lang.toLowerCase().startsWith('ta'));
+
   const stop = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -46,13 +49,26 @@ export const useSpeech = (enabled = true) => {
         return;
       }
 
+      // Check for Tamil voice availability fallback
+      if (lang === 'ta') {
+        const tamilVoice = voices.find((v) => v.lang && v.lang.toLowerCase().startsWith('ta'));
+        if (!tamilVoice) {
+          if (!warnedMissingTamilRef.current && onTamilVoiceMissing) {
+            warnedMissingTamilRef.current = true;
+            onTamilVoiceMissing();
+          }
+          if (onEnd) onEnd();
+          return;
+        }
+      }
+
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
 
       let targetLang = lang === 'ta' ? 'ta-IN' : 'en-IN';
       let selectedVoice = voices.find(
-        (v) => v.lang === targetLang || v.lang.startsWith(lang)
+        (v) => v.lang === targetLang || (v.lang && v.lang.startsWith(lang))
       );
 
       if (selectedVoice) {
@@ -78,7 +94,6 @@ export const useSpeech = (enabled = true) => {
       // Fallback timeout to prevent mic flag from getting stuck if onend never fires
       const maxDurationMs = Math.min(12000, Math.max(3500, text.length * 120));
       timeoutRef.current = setTimeout(() => {
-        console.warn('[useSpeech] SpeechSynthesis onend timeout fallback triggered.');
         stop();
         if (onEnd) onEnd();
       }, maxDurationMs);
@@ -86,12 +101,11 @@ export const useSpeech = (enabled = true) => {
       try {
         window.speechSynthesis.speak(utterance);
       } catch (err) {
-        console.error('[useSpeech] Speak error:', err);
         finishSpeech();
       }
     },
-    [enabled, voices, stop]
+    [enabled, voices, stop, onTamilVoiceMissing]
   );
 
-  return { speak, stop, isSpeaking, voices };
+  return { speak, stop, isSpeaking, voices, hasTamilVoice };
 };

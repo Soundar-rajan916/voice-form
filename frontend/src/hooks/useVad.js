@@ -58,6 +58,29 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
+  const onSpeechEndRef = useRef(onSpeechEnd);
+  useEffect(() => {
+    onSpeechEndRef.current = onSpeechEnd;
+  }, [onSpeechEnd]);
+
+  const disabledRef = useRef(disabled);
+  useEffect(() => {
+    disabledRef.current = disabled;
+    if (disabled && isListening) {
+      stopListening();
+    }
+  }, [disabled, isListening]);
+
+  const silenceDurationMsRef = useRef(silenceDurationMs);
+  useEffect(() => {
+    silenceDurationMsRef.current = silenceDurationMs;
+  }, [silenceDurationMs]);
+
+  const isListeningRef = useRef(isListening);
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+
   // Check microphone permissions
   useEffect(() => {
     if (navigator.permissions && navigator.permissions.query) {
@@ -84,9 +107,14 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
     }
 
     // 2. Stop Manual MediaRecorder fallback if active
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+    if (mediaRecorderRef.current) {
       try {
-        mediaRecorderRef.current.stop();
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        if (mediaRecorderRef.current.stream) {
+          mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
+        }
       } catch (err) {}
       mediaRecorderRef.current = null;
     }
@@ -97,7 +125,7 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
   }, []);
 
   const startListening = useCallback(async () => {
-    if (disabled || isInitializingRef.current) return;
+    if (disabledRef.current || isInitializingRef.current || isListeningRef.current) return;
     isInitializingRef.current = true;
     setErrorDetails(null);
 
@@ -145,7 +173,7 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
         onnxWASMPath: '/ort-wasm-simd-threaded.wasm',
         positiveSpeechThreshold: 0.6,
         negativeSpeechThreshold: 0.4,
-        redemptionFrames: Math.max(8, Math.round((silenceDurationMs / 1000) * 30)),
+        redemptionFrames: Math.max(8, Math.round((silenceDurationMsRef.current / 1000) * 30)),
         preSpeechPadFrames: 10,
         minSpeechFrames: 5,
         onSpeechStart: () => {
@@ -155,12 +183,14 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
           setVadState('processing');
           if (audio && audio.length > 0) {
             const wavBuffer = encodeWAV(audio, 16000);
-            if (onSpeechEnd) {
-              onSpeechEnd(wavBuffer);
+            if (onSpeechEndRef.current) {
+              onSpeechEndRef.current(wavBuffer);
             }
           }
           setTimeout(() => {
-            setVadState('listening');
+            if (isListeningRef.current) {
+              setVadState('listening');
+            }
           }, 300);
         }
       });
@@ -182,17 +212,24 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
 
         mediaRecorder.onstop = async () => {
           setVadState('processing');
-          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          const arrayBuffer = await blob.arrayBuffer();
-          // Convert audio blob to Float32Array PCM for WAV encoding
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-          const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-          const pcm = decoded.getChannelData(0);
-          const wavBuffer = encodeWAV(pcm, 16000);
-          if (onSpeechEnd) {
-            onSpeechEnd(wavBuffer);
+          if (audioChunksRef.current.length > 0) {
+            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+            try {
+              const arrayBuffer = await blob.arrayBuffer();
+              // Convert audio blob to Float32Array PCM for WAV encoding
+              const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+              const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+              const pcm = decoded.getChannelData(0);
+              const wavBuffer = encodeWAV(pcm, 16000);
+              if (onSpeechEndRef.current) {
+                onSpeechEndRef.current(wavBuffer);
+              }
+            } catch (decErr) {
+              console.warn('[useVad] Audio decode error:', decErr);
+            }
           }
           setVadState('idle');
+          setIsListening(false);
         };
 
         mediaRecorderRef.current = mediaRecorder;
@@ -208,21 +245,21 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
         isInitializingRef.current = false;
       }
     }
-  }, [disabled, silenceDurationMs, onSpeechEnd]);
+  }, []);
 
   const toggleListening = useCallback(() => {
-    if (isListening) {
+    if (isListeningRef.current) {
       stopListening();
     } else {
       startListening();
     }
-  }, [isListening, startListening, stopListening]);
+  }, [startListening, stopListening]);
 
   useEffect(() => {
     return () => {
       stopListening();
     };
-  }, []);
+  }, [stopListening]);
 
   return {
     vadState,

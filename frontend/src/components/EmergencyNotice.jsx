@@ -1,11 +1,17 @@
 import React from 'react';
-import { brandConfig } from '../brand';
+import { getTranslation } from '../i18n';
+import { Info } from 'lucide-react';
 
-export const EmergencyNotice = () => {
+export const EmergencyNotice = ({ uiLang = 'en' }) => {
+  const disclaimerText = getTranslation(uiLang, 'disclaimer_banner');
+
   return (
-    <div className="bg-[#D5BDAF]/25 border-b border-[#23272F]/15 px-4 py-2 text-xs text-[#23272F] font-medium flex items-center justify-center space-x-2 shrink-0">
-      <span className="font-semibold">Notice:</span>
-      <span>{brandConfig.disclaimerEn}</span>
-    </div>
+    <aside
+      aria-label="Portal disclaimer"
+      className="bg-[#E3D5CA]/60 border-b border-[#D6CCC2] px-4 py-2 text-sm text-[#524E4A] font-medium flex items-center justify-center space-x-2 shrink-0 select-none"
+    >
+      <Info className="w-4 h-4 text-[#524E4A] shrink-0" aria-hidden="true" />
+      <span lang={uiLang === 'ta' ? 'ta' : 'en'}>{disclaimerText}</span>
+    </aside>
   );
 };

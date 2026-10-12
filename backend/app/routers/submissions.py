@@ -10,11 +10,10 @@ from app.db import get_db
 from app.models import User, Form, FormVersion, FormField, Submission, SubmissionAnswer
 from app.schemas import (
     SubmissionDetailResponse, SubmissionAnswerCreate,
-    SubmissionAnswerResponse, FormFieldResponse, ReferenceLookupResponse
+    SubmissionAnswerResponse, FormFieldResponse
 )
 from app.deps import require_user, check_submission_access
 from app.services.submission_title import compute_submission_title, compute_submission_titles_batch
-from app.services.reference_number import generate_reference_number, validate_reference_number
 from app.services.crypto import encrypt_field_value, decrypt_field_value, mask_field_value
 from app.services.audit import record_audit_event
 
@@ -212,100 +211,6 @@ async def list_user_submissions(
         )
     return result
 
-@router.get("/submissions/lookup", response_model=ReferenceLookupResponse)
-async def lookup_submission_by_reference(
-    ref: str = Query(..., description="Reference number (e.g. CS-241011-7K3M9QX2)"),
-    current_user: User = Depends(require_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Search and verify an application by its unique reference number.
-    Validates checksum before querying.
-    """
-    ref_clean = ref.strip().upper()
-    is_valid, _ = validate_reference_number(ref_clean)
-    if not is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid reference number checksum or format. Please check the receipt."
-        )
-
-    res = await db.execute(
-        select(Submission)
-        .options(
-            selectinload(Submission.form),
-            selectinload(Submission.version).selectinload(FormVersion.fields),
-            selectinload(Submission.answers),
-            selectinload(Submission.user)
-        )
-        .where(Submission.reference_number == ref_clean)
-    )
-    sub = res.scalar_one_or_none()
-    if not sub:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Application with this reference number was not found"
-        )
-
-    check_submission_access(sub, current_user)
-
-    await record_audit_event(
-        db,
-        action="view_by_reference",
-        actor_id=current_user.id,
-        actor_role=current_user.role,
-        target_type="submission",
-        target_id=str(sub.id),
-        details={"reference_number": ref_clean}
-    )
-
-    sub_title = await compute_submission_title(db, sub)
-    ver_fields = sub.version.fields if sub.version else []
-    ans_map = {a.field_id: a.value for a in sub.answers if a.value}
-    req_fields = [f for f in ver_fields if f.required]
-    all_ans = len(req_fields) > 0 and all(f.id in ans_map and str(ans_map[f.id]).strip() != "" for f in req_fields)
-    can_edit = (sub.status == "in_progress")
-    formatted_answers = _format_answers_for_response(sub.answers, ver_fields)
-
-    detail_resp = SubmissionDetailResponse(
-        id=sub.id,
-        form_id=sub.form_id,
-        form_version_id=sub.form_version_id,
-        version_number=sub.version.version_number if sub.version else 1,
-        user_id=sub.user_id,
-        user_email=sub.user.email if sub.user else "",
-        status=sub.status,
-        started_at=sub.started_at,
-        completed_at=sub.completed_at,
-        submitted_at=sub.submitted_at,
-        submission_title=sub_title,
-        submission_name=sub_title,
-        all_answered=all_ans,
-        can_edit=can_edit,
-        reference_number=sub.reference_number,
-        channel=sub.channel,
-        assisted_by=sub.assisted_by,
-        kiosk_id=sub.kiosk_id,
-        consent_at=sub.consent_at,
-        consent_noted_by=sub.consent_noted_by,
-        language_chosen=sub.language_chosen,
-        retention_expires_at=sub.retention_expires_at,
-        print_count=sub.print_count or 0,
-        answers=formatted_answers,
-        fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
-    )
-
-    can_reprint = True
-    if current_user.role == "kiosk" and (sub.print_count or 0) >= 2:
-        can_reprint = False
-
-    return ReferenceLookupResponse(
-        submission=detail_resp,
-        form_title=sub.form.title if sub.form else "Citizen Application",
-        office_name=settings.OFFICE_NAME,
-        can_reprint=can_reprint
-    )
-
 @router.get("/submissions/{submission_id}", response_model=SubmissionDetailResponse)
 async def get_user_submission(
     submission_id: int,
@@ -395,7 +300,6 @@ async def delete_user_submission(
             detail="Submitted forms cannot be deleted"
         )
 
-    ref_num = sub.reference_number
     await db.delete(sub)
     await db.commit()
 
@@ -405,8 +309,7 @@ async def delete_user_submission(
         actor_id=current_user.id,
         actor_role=current_user.role,
         target_type="submission",
-        target_id=str(submission_id),
-        details={"reference_number": ref_num}
+        target_id=str(submission_id)
     )
     return None
 
@@ -491,10 +394,6 @@ async def complete_submission(
         sub.submitted_at = now
         sub.completed_at = now
 
-        # Generate unique Crockford Base32 reference number
-        if not sub.reference_number:
-            sub.reference_number = generate_reference_number("CS")
-
         # Set retention expiration date
         if not sub.retention_expires_at:
             sub.retention_expires_at = now + timedelta(days=settings.RETENTION_DAYS)
@@ -509,8 +408,6 @@ async def complete_submission(
             target_type="submission",
             target_id=str(sub.id),
             details={
-                "reference_number": sub.reference_number,
-                "channel": sub.channel,
                 "retention_expires_at": sub.retention_expires_at.isoformat()
             }
         )
@@ -563,131 +460,3 @@ async def complete_submission(
         fields=[FormFieldResponse.model_validate(f) for f in ver_fields]
     )
 
-@router.post("/submissions/{submission_id}/print")
-async def record_submission_print(
-    submission_id: int,
-    print_type: str = Query("slip", description="'slip' or 'a4'"),
-    current_user: User = Depends(require_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Logs and increments print count for receipt slips or A4 applications.
-    Kiosks are restricted to 2 prints (slip + A4) per completed session.
-    """
-    res = await db.execute(
-        select(Submission)
-        .options(selectinload(Submission.form))
-        .where(Submission.id == submission_id)
-    )
-    sub = res.scalar_one_or_none()
-    if not sub:
-        raise HTTPException(status_code=404, detail="Submission not found")
-
-    check_submission_access(sub, current_user)
-
-    if current_user.role == "kiosk" and (sub.print_count or 0) >= 2:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Kiosk print limit reached for this session."
-        )
-
-    sub.print_count = (sub.print_count or 0) + 1
-    await db.commit()
-
-    await record_audit_event(
-        db,
-        action="print_application",
-        actor_id=current_user.id,
-        actor_role=current_user.role,
-        target_type="submission",
-        target_id=str(sub.id),
-        details={
-            "print_type": print_type,
-            "print_count": sub.print_count,
-            "reference_number": sub.reference_number
-        }
-    )
-
-    return {
-        "status": "ok",
-        "print_count": sub.print_count,
-        "reference_number": sub.reference_number,
-        "can_reprint": (current_user.role in ("admin", "operator") or (sub.print_count < 2))
-    }
-
-@router.get("/submissions/{submission_id}/pdf")
-async def generate_submission_pdf(
-    submission_id: int,
-    copy_type: str = Query("slip", description="'slip' or 'a4'"),
-    current_user: User = Depends(require_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Optional server-side PDF export via Playwright Chromium.
-    Feature-flagged by settings.ENABLE_PDF_EXPORT.
-    """
-    if not settings.ENABLE_PDF_EXPORT:
-        raise HTTPException(status_code=501, detail="Server-side PDF export is disabled.")
-
-    res = await db.execute(
-        select(Submission)
-        .options(
-            selectinload(Submission.form),
-            selectinload(Submission.version).selectinload(FormVersion.fields),
-            selectinload(Submission.answers)
-        )
-        .where(Submission.id == submission_id)
-    )
-    sub = res.scalar_one_or_none()
-    if not sub:
-        raise HTTPException(status_code=404, detail="Submission not found")
-
-    check_submission_access(sub, current_user)
-
-    # Simple printable HTML for Playwright or direct PDF delivery
-    title = sub.form.title if sub.form else "Citizen Application"
-    ref = sub.reference_number or f"REF-{sub.id}"
-    disclaimer = "This is an application helper and not an official government portal."
-    
-    html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-  body {{ font-family: sans-serif; padding: 20px; }}
-  .box {{ border: 2px solid #5B2A86; padding: 15px; border-radius: 8px; max-width: 600px; }}
-  .ref-cells {{ display: flex; gap: 4px; margin: 10px 0; }}
-  .cell {{ border: 1.5px solid #23272F; width: 28px; height: 32px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-family: monospace; font-size: 18px; }}
-  .disclaimer {{ font-size: 11px; color: #666; margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 8px; }}
-</style>
-</head>
-<body>
-<div class="box">
-  <h2>{settings.OFFICE_NAME}</h2>
-  <h3>{title}</h3>
-  <p>Reference Number:</p>
-  <div class="ref-cells">
-    {''.join([f'<span class="cell">{c}</span>' for c in ref])}
-  </div>
-  <p>Date: {sub.submitted_at.strftime('%Y-%m-%d %H:%M') if sub.submitted_at else 'In Progress'}</p>
-  <div class="disclaimer">{disclaimer}</div>
-</div>
-</body>
-</html>"""
-
-    # Record print/export audit event
-    await record_audit_event(
-        db,
-        action="pdf_export",
-        actor_id=current_user.id,
-        actor_role=current_user.role,
-        target_type="submission",
-        target_id=str(sub.id),
-        details={"copy_type": copy_type, "reference_number": ref}
-    )
-
-    return Response(
-        content=html_content,
-        media_type="text/html",
-        headers={"Content-Disposition": f"inline; filename={ref}.html"}
-    )

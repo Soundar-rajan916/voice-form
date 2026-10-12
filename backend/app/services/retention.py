@@ -26,7 +26,6 @@ async def cleanup_expired_submissions(db: AsyncSession) -> int:
 
     count = 0
     for sub in expired:
-        ref_num = sub.reference_number or f"sub-{sub.id}"
         await record_audit_event(
             db,
             action="retention_cleanup",
@@ -35,8 +34,6 @@ async def cleanup_expired_submissions(db: AsyncSession) -> int:
             target_type="submission",
             target_id=str(sub.id),
             details={
-                "reference_number": ref_num,
-                "channel": sub.channel,
                 "retention_expires_at": sub.retention_expires_at.isoformat() if sub.retention_expires_at else None
             }
         )

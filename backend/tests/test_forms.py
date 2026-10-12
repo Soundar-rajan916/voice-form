@@ -172,3 +172,77 @@ async def test_admin_archive_and_unarchive_form(client: AsyncClient, admin_token
     unarch_draft = await client.post(f"/admin/forms/{form_id}/unarchive?target_status=draft", headers=admin_token_headers)
     assert unarch_draft.status_code == 200
     assert unarch_draft.json()["status"] == "draft"
+
+@pytest.mark.asyncio
+async def test_admin_export_excel(client: AsyncClient, admin_token_headers, user_token_headers):
+    import io
+    import openpyxl
+
+    # 1. Create and publish form
+    form_res = await client.post(
+        "/admin/forms",
+        json={
+            "title": "Feedback Excel Form",
+            "description": "Form for testing excel export",
+            "fields": [
+                {"field_name": "full_name", "data_type": "String", "description": "Full Name", "required": True, "position": 0},
+                {"field_name": "age", "data_type": "Number", "description": "Age", "required": False, "position": 1}
+            ]
+        },
+        headers=admin_token_headers
+    )
+    assert form_res.status_code == 201
+    form_id = form_res.json()["id"]
+    await client.post(f"/admin/forms/{form_id}/publish", headers=admin_token_headers)
+
+    # 2. User creates an in_progress submission (should NOT be exported)
+    in_prog = await client.post(f"/forms/{form_id}/submissions", headers=user_token_headers)
+    assert in_prog.status_code == 201
+
+    # 3. User creates a completed submission
+    comp = await client.post(f"/forms/{form_id}/submissions", headers=user_token_headers)
+    comp_id = comp.json()["id"]
+    sub_detail = comp.json()
+    fields = sub_detail["fields"]
+    name_field = next(f for f in fields if f["field_name"] == "full_name")
+
+    # Submit with answer
+    submit_res = await client.post(
+        f"/submissions/{comp_id}/submit",
+        json=[
+            {"field_id": name_field["id"], "value": "John Doe", "raw_transcript": "My name is John Doe", "language": "en"}
+        ],
+        headers=user_token_headers
+    )
+    assert submit_res.status_code == 200
+
+    # 4. Request Excel export via Bearer token
+    res = await client.get(f"/admin/forms/{form_id}/submissions.xlsx", headers=admin_token_headers)
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    assert "attachment; filename=" in res.headers["content-disposition"]
+
+    # 5. Inspect Excel workbook contents using openpyxl
+    wb = openpyxl.load_workbook(io.BytesIO(res.content))
+    assert "Submissions" in wb.sheetnames
+    assert "Answers Ledger" in wb.sheetnames
+
+    sub_sheet = wb["Submissions"]
+    # Header row is row 1
+    headers = [cell.value for cell in sub_sheet[1]]
+    assert "Reference Number" not in headers
+    assert "Channel" not in headers
+    assert "Applicant Email" in headers
+    assert "Full Name" in headers
+
+    # Should have exactly 2 rows (header + 1 submitted row, in-progress excluded)
+    rows = list(sub_sheet.iter_rows(values_only=True))
+    assert len(rows) == 2
+    row_data = dict(zip(rows[0], rows[1]))
+    assert row_data["Full Name"] == "John Doe"
+
+    # Also test export with token in query string (for direct browser link)
+    admin_token = admin_token_headers["Authorization"].split(" ")[1]
+    res_query = await client.get(f"/admin/forms/{form_id}/submissions.xlsx?token={admin_token}")
+    assert res_query.status_code == 200
+

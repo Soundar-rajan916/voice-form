@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { adminFormsApi } from '../api/client';
 import { Navbar } from '../components/Navbar';
-import { brandConfig } from '../brand';
 import {
-  Download, ArrowLeft, Loader2, Filter, AlertCircle, FileText, Printer, X
+  Download, ArrowLeft, Loader2, Filter, AlertCircle, FileText
 } from 'lucide-react';
-import { ReceiptSlipPrint } from '../components/ReceiptSlipPrint';
-import { ApplicationA4Print } from '../components/ApplicationA4Print';
 
 export const Submissions = () => {
   const { formId } = useParams();
@@ -16,8 +13,7 @@ export const Submissions = () => {
   const [selectedVersion, setSelectedVersion] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [printModalSub, setPrintModalSub] = useState(null);
-  const [printFormat, setPrintFormat] = useState('slip'); // 'slip' or 'a4'
+  const [exporting, setExporting] = useState(false);
 
   const loadSubmissions = async (vId = selectedVersion) => {
     setLoading(true);
@@ -28,7 +24,7 @@ export const Submissions = () => {
         adminFormsApi.getSubmissions(formId, vId || null)
       ]);
       setForm(formData);
-      setSubmissions(subsData);
+      setSubmissions((subsData || []).filter((s) => s.status !== 'in_progress'));
     } catch (err) {
       setError(err.message || 'Failed to load submissions');
     } finally {
@@ -40,29 +36,25 @@ export const Submissions = () => {
     loadSubmissions(selectedVersion);
   }, [formId, selectedVersion]);
 
-  const handleDownloadCSV = () => {
-    const url = adminFormsApi.getCSVUrl(formId, selectedVersion);
-    window.open(url, '_blank');
-  };
-
-  const handlePrintSubmission = async (sub, format) => {
+  const handleDownloadExcel = async () => {
+    setExporting(true);
+    setError('');
     try {
-      const token = localStorage.getItem('voiceform_token');
-      await fetch(`/api/submissions/${sub.id}/print`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({ print_type: format })
-      });
-      // update count locally
-      setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, print_count: (s.print_count || 0) + 1 } : s));
-    } catch (e) {
-      console.warn('Failed to record print audit:', e);
+      const blob = await adminFormsApi.downloadExcel(formId, selectedVersion);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeTitle = (form?.title || `form_${formId}`).replace(/[^a-zA-Z0-9_-]/g, '_');
+      a.download = `${safeTitle}_submissions.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message || 'Failed to export Excel file');
+    } finally {
+      setExporting(false);
     }
-    setPrintModalSub(sub);
-    setPrintFormat(format);
   };
 
   return (
@@ -110,11 +102,16 @@ export const Submissions = () => {
 
             <button
               type="button"
-              onClick={handleDownloadCSV}
-              className="px-4 py-2 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F5EBE0] font-semibold text-sm rounded transition-colors flex items-center space-x-2 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF]"
+              onClick={handleDownloadExcel}
+              disabled={exporting}
+              className="px-4 py-2 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-[#F5EBE0] font-semibold text-sm rounded transition-colors flex items-center space-x-2 cursor-pointer focus:ring-2 focus:ring-[#1F3FBF] disabled:opacity-60"
             >
-              <Download className="w-4 h-4" />
-              <span>Export CSV</span>
+              {exporting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              <span>{exporting ? 'Exporting...' : 'Export Excel'}</span>
             </button>
           </div>
         </div>
@@ -154,58 +151,20 @@ export const Submissions = () => {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#D6CCC2] pb-4">
                     <div className="space-y-2">
-                      {sub.reference_number ? (
-                        <div>
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#23272F]/75 block mb-1">
-                            Reference Number
-                          </span>
-                          <div className="flex items-center gap-1 font-mono text-xs">
-                            {sub.reference_number.split('').map((char, i) => (
-                              <span
-                                key={i}
-                                className={`inline-flex items-center justify-center w-6 h-7 border border-[#23272F] bg-[#F5EBE0] text-[#23272F] font-bold text-sm ${
-                                  char === '-' ? 'border-none w-2 text-center' : ''
-                                }`}
-                              >
-                                {char}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
+                      <div>
                         <span className="px-3 py-1 bg-[#D6CCC2] text-[#23272F] font-semibold text-xs rounded">
-                          {sub.submission_title || sub.submission_name || `#${sub.id}`}
+                          {sub.submission_title || sub.submission_name || `Application #${sub.id}`}
                         </span>
-                      )}
+                      </div>
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#23272F]/75">
                         <span>Applicant: <strong className="text-[#23272F]">{sub.user_email || 'Citizen'}</strong></span>
-                        <span>Channel: <strong className="text-[#5B2A86]">{sub.channel || 'online'}</strong></span>
                         {sub.language_chosen && <span>Language: <strong>{sub.language_chosen.toUpperCase()}</strong></span>}
-                        {sub.print_count > 0 && <span>Printed: <strong>{sub.print_count}x</strong></span>}
                         <span>Submitted: {new Date(sub.submitted_at || sub.started_at).toLocaleString()}</span>
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-2 text-xs font-sans-ui">
-                      <button
-                        type="button"
-                        onClick={() => handlePrintSubmission(sub, 'slip')}
-                        className="px-2.5 py-1.5 border border-[#23272F]/30 hover:bg-[#E3D5CA] text-[#23272F] rounded font-medium flex items-center space-x-1 cursor-pointer"
-                        title="Print 80mm receipt slip"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                        <span>Slip</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handlePrintSubmission(sub, 'a4')}
-                        className="px-2.5 py-1.5 border border-[#5B2A86]/40 text-[#5B2A86] hover:bg-[#5B2A86]/10 rounded font-medium flex items-center space-x-1 cursor-pointer"
-                        title="Print full A4 copy"
-                      >
-                        <Printer className="w-3.5 h-3.5" />
-                        <span>A4 Copy</span>
-                      </button>
                       <span className="px-2.5 py-1 bg-[#1F3FBF]/10 text-[#1F3FBF] rounded uppercase font-semibold">
                         {sub.status}
                       </span>
@@ -250,67 +209,6 @@ export const Submissions = () => {
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {/* Print Modal */}
-        {printModalSub && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="bg-[#F5EBE0] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl relative">
-              <div className="flex items-center justify-between border-b border-[#23272F]/20 pb-3 mb-4">
-                <div className="flex items-center space-x-2">
-                  <Printer className="w-5 h-5 text-[#5B2A86]" />
-                  <h3 className="font-serif font-bold text-lg text-[#23272F]">
-                    Print {printFormat === 'slip' ? 'Receipt Slip (80mm)' : 'Full Application Copy (A4)'}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPrintModalSub(null)}
-                  className="p-1 text-[#23272F]/60 hover:text-[#B3261E] rounded cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="flex justify-center mb-6 overflow-x-auto p-4 bg-[#D6CCC2]/40 rounded border border-[#23272F]/10">
-                {printFormat === 'slip' ? (
-                  <ReceiptSlipPrint
-                    submission={printModalSub}
-                    officeName={brandConfig.officeName}
-                    formTitle={form?.title}
-                    lang={printModalSub.language_chosen || 'ta'}
-                  />
-                ) : (
-                  <ApplicationA4Print
-                    submission={printModalSub}
-                    officeName={brandConfig.officeName}
-                    formTitle={form?.title}
-                    fields={printModalSub.fields || []}
-                    answers={printModalSub.answers || []}
-                    lang={printModalSub.language_chosen || 'ta'}
-                  />
-                )}
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-[#23272F]/20">
-                <button
-                  type="button"
-                  onClick={() => setPrintModalSub(null)}
-                  className="px-4 py-2 border border-[#23272F]/20 text-[#23272F] rounded hover:bg-[#D6CCC2]"
-                >
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="px-5 py-2 bg-[#5B2A86] text-[#F5EBE0] font-semibold rounded hover:bg-[#5B2A86]/90 flex items-center space-x-1.5"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>Print Document</span>
-                </button>
-              </div>
-            </div>
           </div>
         )}
       </main>

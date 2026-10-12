@@ -8,6 +8,9 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@ricky0123/vad-web', 'onnxruntime-web']
   },
+  test: {
+    environment: 'jsdom'
+  },
   server: {
     port: 5173,
     proxy: {

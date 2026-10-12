@@ -223,40 +223,6 @@ class SubmissionDetailResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# Kiosk & Operator Session Schemas
-class KioskSessionCreate(BaseModel):
-    form_id: int
-    language: str = "ta"
-    consent_agreed: bool = True
-
-class KioskSessionResponse(BaseModel):
-    submission_id: int
-    scoped_token: str
-    form_title: str
-    language: str
-    expires_in_minutes: int = 20
-
-# Reference Lookup
-class ReferenceLookupResponse(BaseModel):
-    submission: SubmissionDetailResponse
-    form_title: str
-    office_name: str
-    can_reprint: bool = True
-
-# Kiosk Help
-class KioskHelpRequestCreate(BaseModel):
-    kiosk_name: Optional[str] = None
-
-class KioskHelpRequestResponse(BaseModel):
-    id: int
-    kiosk_id: Optional[int] = None
-    kiosk_name: Optional[str] = None
-    status: str
-    created_at: datetime
-    resolved_at: Optional[datetime] = None
-
-    model_config = ConfigDict(from_attributes=True)
-
 # Audit Log
 class AuditLogResponse(BaseModel):
     id: int

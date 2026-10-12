@@ -15,7 +15,6 @@ from app.services.navigation import parse_navigation_command
 from app.services.normalizer import normalize_transcript
 from app.services.grounding import verify_grounding
 from app.services.filters import check_echo_guard, check_hallucination_filter
-from app.services.reference_number import generate_reference_number
 from app.services.crypto import encrypt_field_value, mask_field_value
 from app.config import settings
 from datetime import datetime, timedelta
@@ -243,8 +242,6 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                                 now = datetime.utcnow()
                                 sub.submitted_at = now
                                 sub.completed_at = now
-                                if not sub.reference_number:
-                                    sub.reference_number = generate_reference_number("CS")
                                 if not sub.retention_expires_at:
                                     sub.retention_expires_at = now + timedelta(days=settings.RETENTION_DAYS)
                                 await db.commit()

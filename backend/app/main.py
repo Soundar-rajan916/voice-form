@@ -9,7 +9,7 @@ from app.config import settings
 from app.db import engine, Base, AsyncSessionLocal
 from app.models import User
 from app.security import hash_password
-from app.routers import auth, admin_forms, forms, submissions, ws, documents, kiosk_desk
+from app.routers import auth, admin_forms, forms, submissions, ws, documents
 from app.services.extraction import extract_answer
 from app.services.vision_reader import check_vision_model_availability
 from app.services.seed import seed_sample_forms
@@ -136,10 +136,10 @@ app.add_middleware(
 
 @app.middleware("http")
 async def add_no_store_for_kiosk_and_apps(request: Request, call_next):
-    """Enforce Cache-Control: no-store on kiosk and application endpoints so citizen data never caches."""
+    """Enforce Cache-Control: no-store on application endpoints so citizen data never caches."""
     response = await call_next(request)
     path = request.url.path
-    if path.startswith("/kiosk") or path.startswith("/submissions"):
+    if path.startswith("/submissions"):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
     return response
@@ -150,7 +150,6 @@ app.include_router(forms.router)
 app.include_router(submissions.router)
 app.include_router(ws.router)
 app.include_router(documents.router)
-app.include_router(kiosk_desk.router)
 
 @app.get("/")
 async def root():

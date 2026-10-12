@@ -25,16 +25,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm="HS256")
     return encoded_jwt
 
-def create_kiosk_scoped_token(kiosk_user_id: int, submission_id: int, expires_minutes: int = 20) -> str:
-    """Creates a short-lived token scoped strictly to one kiosk submission session."""
-    payload = {
-        "sub": str(kiosk_user_id),
-        "scope": "kiosk_session",
-        "submission_id": submission_id,
-        "kiosk_id": kiosk_user_id,
-        "role": "kiosk"
-    }
-    return create_access_token(payload, expires_delta=timedelta(minutes=expires_minutes))
 
 def decode_access_token(token: str) -> Optional[dict]:
     try:

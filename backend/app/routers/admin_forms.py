@@ -1,10 +1,13 @@
 import csv
 import io
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 from app.config import settings
 from app.db import get_db
@@ -15,6 +18,7 @@ from app.schemas import (
     SubmissionAnswerResponse, SubmissionProposalResponse
 )
 from app.deps import require_admin
+from app.security import decode_access_token
 from app.services.questions import generate_field_questions
 from app.services.extraction import extract_answer
 from app.services.submission_title import compute_submission_titles_batch
@@ -22,6 +26,34 @@ from app.services.audit import record_audit_event
 from app.services.crypto import decrypt_field_value
 
 router = APIRouter(prefix="/admin/forms", tags=["admin-forms"])
+
+async def require_admin_export(
+    token_query: Optional[str] = Query(None, alias="token"),
+    auth_header: Optional[str] = Header(None, alias="Authorization"),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1]
+    elif token_query:
+        token = token_query
+
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+
+    res = await db.execute(select(User).where(User.id == int(user_id)))
+    user = res.scalar_one_or_none()
+    if not user or user.role != "admin" or not getattr(user, "is_active", True):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required")
+    return user
 
 @router.get("/health/extraction")
 async def extraction_health_check(current_user: User = Depends(require_admin)):
@@ -438,6 +470,7 @@ async def get_admin_form_submissions(
             selectinload(Submission.user)
         )
         .where(Submission.form_id == form_id)
+        .where(Submission.status != "in_progress")
     )
 
     if version_id:
@@ -505,12 +538,12 @@ async def get_admin_form_submissions(
 
     return result
 
-@router.get("/{form_id}/submissions.csv")
-async def export_submissions_csv(
+@router.get("/{form_id}/submissions.xlsx")
+async def export_submissions_excel(
     form_id: int,
     version_id: Optional[int] = Query(None),
     include_sensitive: bool = Query(False, description="Explicitly include decrypted sensitive number fields (Admin only, audited)"),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_admin_export),
     db: AsyncSession = Depends(get_db)
 ):
     form_res = await db.execute(select(Form).where(Form.id == form_id))
@@ -527,6 +560,175 @@ async def export_submissions_csv(
             selectinload(Submission.user)
         )
         .where(Submission.form_id == form_id)
+        .where(Submission.status != "in_progress")
+    )
+    if version_id:
+        query = query.where(Submission.form_version_id == version_id)
+
+    query = query.order_by(Submission.started_at.desc())
+    res = await db.execute(query)
+    submissions = res.scalars().all()
+
+    # Collect unique fields across submissions in order
+    fields_order = []
+    seen_field_ids = set()
+    for s in submissions:
+        if s.version and s.version.fields:
+            for f in s.version.fields:
+                if f.id not in seen_field_ids:
+                    seen_field_ids.add(f.id)
+                    fields_order.append(f)
+
+    wb = openpyxl.Workbook()
+
+    # Styling
+    header_fill = PatternFill(start_color="1F3FBF", end_color="1F3FBF", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    data_font = Font(name="Calibri", size=10)
+    mono_font = Font(name="Consolas", size=10)
+    thin_border = Border(
+        left=Side(style="thin", color="D6CCC2"),
+        right=Side(style="thin", color="D6CCC2"),
+        top=Side(style="thin", color="D6CCC2"),
+        bottom=Side(style="thin", color="D6CCC2")
+    )
+
+    # Sheet 1: Submissions (Summary table)
+    ws_summary = wb.active
+    ws_summary.title = "Submissions"
+
+    base_headers = ["Applicant Email", "Status", "Language", "Submitted At"]
+    field_headers = [f.field_name.replace("_", " ").title() for f in fields_order]
+    summary_headers = base_headers + field_headers
+
+    ws_summary.append(summary_headers)
+    for col_idx in range(1, len(summary_headers) + 1):
+        cell = ws_summary.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center" if col_idx <= 4 else "left", vertical="center")
+    ws_summary.row_dimensions[1].height = 26
+
+    for s in submissions:
+        answers_by_id = {a.field_id: a for a in s.answers}
+        row = [
+            s.user.email if s.user else "Citizen",
+            (s.status or "submitted").title(),
+            (getattr(s, "language_chosen", "en") or "en").upper(),
+            s.submitted_at.strftime("%Y-%m-%d %H:%M") if s.submitted_at else (s.started_at.strftime("%Y-%m-%d %H:%M") if s.started_at else "")
+        ]
+
+        for f in fields_order:
+            ans = answers_by_id.get(f.id)
+            val = ans.value if ans else ""
+            if getattr(f, "is_sensitive_number", False) and val:
+                val = decrypt_field_value(val) if include_sensitive else "••••••••"
+            row.append(val or "")
+
+        ws_summary.append(row)
+        curr_row = ws_summary.max_row
+        for col_idx in range(1, len(row) + 1):
+            cell = ws_summary.cell(row=curr_row, column=col_idx)
+            cell.font = data_font
+            cell.border = thin_border
+            if col_idx in (2, 3, 4):
+                cell.alignment = Alignment(horizontal="center")
+
+    for col in ws_summary.columns:
+        col_letter = get_column_letter(col[0].column)
+        max_len = max(len(str(c.value or '')) for c in col)
+        ws_summary.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+    # Sheet 2: Detailed Answers
+    ws_details = wb.create_sheet(title="Answers Ledger")
+    detail_headers = [
+        "Submission ID", "Applicant", "Field Name",
+        "Cleaned Value", "Answer Source", "Language", "Raw Transcript"
+    ]
+    ws_details.append(detail_headers)
+    for col_idx in range(1, len(detail_headers) + 1):
+        cell = ws_details.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center" if col_idx == 1 else "left", vertical="center")
+    ws_details.row_dimensions[1].height = 26
+
+    for s in submissions:
+        applicant = s.user.email if s.user else "Citizen"
+        answers_by_id = {a.field_id: a for a in s.answers}
+        s_fields = s.version.fields if s.version and s.version.fields else fields_order
+
+        for f in s_fields:
+            if getattr(f, "is_sensitive_number", False) and not include_sensitive:
+                continue
+            ans = answers_by_id.get(f.id)
+            val = ans.value if ans else ""
+            if getattr(f, "is_sensitive_number", False) and val:
+                val = decrypt_field_value(val)
+            src = ans.source if ans else ""
+            lang = ans.language if ans else ""
+            raw = ans.raw_transcript if ans else ""
+
+            ws_details.append([
+                s.id, applicant, f.field_name, val, src, lang, raw
+            ])
+            r_idx = ws_details.max_row
+            for col_idx in range(1, len(detail_headers) + 1):
+                c = ws_details.cell(row=r_idx, column=col_idx)
+                c.font = mono_font if col_idx == 1 else data_font
+                c.border = thin_border
+
+    for col in ws_details.columns:
+        col_letter = get_column_letter(col[0].column)
+        max_len = max(len(str(c.value or '')) for c in col)
+        ws_details.column_dimensions[col_letter].width = min(max(max_len + 3, 12), 50)
+
+    await record_audit_event(
+        db,
+        action="export_excel",
+        actor_id=current_user.id,
+        actor_role=current_user.role,
+        target_type="form",
+        target_id=str(form_id),
+        details={"include_sensitive": include_sensitive, "submissions_count": len(submissions)}
+    )
+
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+
+    safe_title = "".join(c for c in form.title if c.isalnum() or c in (" ", "_", "-")).strip().replace(" ", "_")
+    filename = f"{safe_title or 'form_' + str(form_id)}_submissions.xlsx"
+
+    return Response(
+        content=out.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+@router.get("/{form_id}/submissions.csv")
+async def export_submissions_csv(
+    form_id: int,
+    version_id: Optional[int] = Query(None),
+    include_sensitive: bool = Query(False, description="Explicitly include decrypted sensitive number fields (Admin only, audited)"),
+    current_user: User = Depends(require_admin_export),
+    db: AsyncSession = Depends(get_db)
+):
+    form_res = await db.execute(select(Form).where(Form.id == form_id))
+    form = form_res.scalar_one_or_none()
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found")
+
+    query = (
+        select(Submission)
+        .options(
+            selectinload(Submission.form),
+            selectinload(Submission.version).selectinload(FormVersion.fields),
+            selectinload(Submission.answers),
+            selectinload(Submission.user)
+        )
+        .where(Submission.form_id == form_id)
+        .where(Submission.status != "in_progress")
     )
     if version_id:
         query = query.where(Submission.form_version_id == version_id)
@@ -539,7 +741,7 @@ async def export_submissions_csv(
     writer = csv.writer(output)
 
     writer.writerow([
-        "Submission Title", "Submission ID", "Reference Number", "User Email", "Version Number", "Status",
+        "Submission Title", "Submission ID", "User Email", "Version Number", "Status",
         "Started At", "Completed At", "Field Name", "Cleaned Value", "Answer Source", "Raw Transcript"
     ])
 
@@ -548,7 +750,6 @@ async def export_submissions_csv(
         answers_by_field = {a.field_id: a for a in s.answers}
         fields = s.version.fields if s.version else []
         sub_title = title_map.get(s.id, f"submission-{s.id}")
-        ref_num = s.reference_number or ""
         for f in fields:
             # Sensitive number fields are excluded from CSV exports unless an admin explicitly includes them
             if getattr(f, "is_sensitive_number", False) and not include_sensitive:
@@ -561,7 +762,7 @@ async def export_submissions_csv(
             src = ans.source if ans else ""
             raw = ans.raw_transcript if ans else ""
             writer.writerow([
-                sub_title, s.id, ref_num, s.user.email if s.user else "", v_num, s.status,
+                sub_title, s.id, s.user.email if s.user else "", v_num, s.status,
                 s.started_at.isoformat() if s.started_at else "",
                 s.completed_at.isoformat() if s.completed_at else "",
                 f.field_name, val, src, raw

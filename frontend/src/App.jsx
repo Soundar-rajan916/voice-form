@@ -16,7 +16,6 @@ const FormBuilder = lazy(() =>
 const Submissions = lazy(() =>
   import('./pages/Submissions').then((m) => ({ default: m.Submissions }))
 );
-const KioskMode = lazy(() => import('./pages/KioskMode'));
 
 const ProtectedRoute = ({ children, requireRole }) => {
   const { user, loading } = useAuth();
@@ -58,7 +57,6 @@ const RootRedirect = () => {
 
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'admin') return <Navigate to="/admin" replace />;
-  if (user.role === 'kiosk') return <Navigate to="/kiosk" replace />;
   return <Navigate to="/user" replace />;
 };
 
@@ -76,9 +74,6 @@ export default function App() {
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<Login />} />
-
-            {/* Kiosk Mode (Public / Kiosk Device Screen) */}
-            <Route path="/kiosk" element={<KioskMode />} />
 
 
 

@@ -12,6 +12,8 @@ export const ta = {
   language_en: "English",
   language_ta: "தமிழ்",
   speech_toggle_label: "கேள்விகளை சத்தமாக வாசிக்கவும்",
+  speech_toggle_on: "சத்தமாக வாசி: இயக்கத்தில்",
+  speech_toggle_off: "சத்தமாக வாசி: நிறுத்தம்",
   role_citizen: "குடிமக்கள்",
   role_operator: "உதவி மைய அலுவலர்",
   role_kiosk: "சுய சேவை சாதனம்",
@@ -20,6 +22,7 @@ export const ta = {
   // Non-Official Disclaimer
   non_official_disclaimer: "இது ஒரு விண்ணப்ப உதவி தளம் மட்டுமே, அதிகாரப்பூர்வ அரசு இணையதளம் அல்ல.",
   disclaimer_short: "விண்ணப்ப உதவி தளம் — அரசு இணையதளம் அல்ல.",
+  disclaimer_banner: "விண்ணப்ப உதவி தளம் — அதிகாரப்பூர்வ அரசு இணையதளம் அல்ல.",
 
   // Login & Register
   login_title: "{appName} உள்நுழைவு",
@@ -88,23 +91,83 @@ export const ta = {
   // Voice Form & Sheet
   welcome_msg: "வணக்கம். {title} விண்ணப்பத்தை நிரப்ப நான் உதவுகிறேன். ஒவ்வொரு கேள்வியாகக் கேட்கிறேன். நீங்கள் பேசியோ அல்லது தட்டச்சு செய்தோ பதிலளிக்கலாம்.",
   review_stage_msg: "எல்லா கேள்விகளுக்கும் பதில் அளிக்கப்பட்டுவிட்டது. உங்கள் பதில்களை சரிபார்த்து சமர்ப்பிக்கவும்.",
-  submitted_lock_msg: "இந்த விண்ணப்பம் ஏற்கனவே சமர்ப்பிக்கப்பட்டுவிட்டது.",
+  completed_stage_msg: "அனைத்து கேள்விகளுக்கும் பதிலளிக்கப்பட்டுவிட்டது! உங்கள் விண்ணப்பத்தை சரிபார்த்து சமர்ப்பிக்கலாம், அல்லது மாற்ற விரும்பும் பதிலைத் தட்டலாம்.",
+  submitted_lock_msg: "இந்த விண்ணப்பம் ஏற்கனவே சமர்ப்பிக்கப்பட்டுவிட்டது, இனி மாற்ற முடியாது.",
+  submitted_success_msg: "விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது. உங்கள் பதில்கள் பதிவு செய்யப்பட்டுள்ளன.",
+
+  // Mic control states & labels
   mic_idle: "பேசத் தொடங்குங்கள்",
+  mic_requesting_permission: "மைக்ரோஃபோன் அணுகலை அனுமதிக்கவும்",
   mic_listening: "கேட்கிறது...",
-  mic_processing: "சரிபார்க்கிறது...",
+  mic_listening_tap_to_stop: "கேட்கிறது... நிறுத்த தட்டவும்",
+  mic_processing: "பதிலை சரிபார்க்கிறது...",
   mic_blocked: "மைக்ரோஃபோன் அணுகல் முடக்கப்பட்டுள்ளது. அமைப்புகளில் மாற்றவும் அல்லது தட்டச்சு செய்யவும்.",
-  type_placeholder: "உங்கள் பதிலை இங்கே தட்டச்சு செய்யவும்",
+  mic_error_denied: "மைக்ரோஃபோன் அனுமதி மறுக்கப்பட்டது. உலாவி அமைப்புகளில் அனுமதிக்கவும்.",
+  mic_error_no_speech: "குரல் எதுவும் கேட்கவில்லை. மைக்கில் தெளிவாகப் பேசவும்.",
+  mic_error_network: "குரல் சேவை இணைப்பில் சிக்கல். இணைப்பைச் சரிபார்க்கவும் அல்லது தட்டச்சு செய்யவும்.",
+  mic_try_again: "மீண்டும் முயற்சி செய்",
+  mic_typing_hint: "கீழே உள்ள பெட்டியில் தட்டச்சு செய்தும் பதிலளிக்கலாம்.",
+  lang_active_badge: "அறிவது: {lang}",
+  tts_ta_missing_notice: "இந்த சாதனத்தில் தமிழ் குரல் கிடைக்கவில்லை. கேள்விகள் உரையாகக் காட்டப்படுகின்றன.",
+
+  // Composer & controls
+  type_placeholder: "உங்கள் பதிலை இங்கே தட்டச்சு செய்யவும்...",
   btn_send: "அனுப்பு",
   btn_back: "முந்தைய கேள்வி",
+  btn_back_to_forms: "படிவங்கள் பட்டியலுக்கு",
   btn_undo: "செயல்தவிர்",
   btn_cancel: "ரத்து செய்",
-  btn_submit: "விண்ணப்பத்தை சமர்ப்பிக்கவும்",
+  btn_submit: "சரிபார்த்து சமர்ப்பிக்கவும்",
   btn_submitted: "விண்ணப்பம் சமர்ப்பிக்கப்பட்டது",
+  btn_review_and_submit: "சரிபார்த்து சமர்ப்பிக்கவும்",
+  btn_change_answer: "பதிலை மாற்றவும்",
+  completed_status_title: "அனைத்துப் பதில்களும் பூர்த்தி செய்யப்பட்டன",
+  completed_status_desc: "சரிபார்த்து சமர்ப்பிக்கலாம், அல்லது மாற்ற விரும்பும் பதிலைத் தட்டலாம்.",
+
+  // Stamp & side panel
   stamp_received: "பெறப்பட்டது",
+  stamp_submitted: "சமர்ப்பிக்கப்பட்டது",
   sheet_title: "சேவை விண்ணப்ப படிவம்",
+  panel_title_answers: "உங்கள் பதில்கள்",
   sheet_progress: "{total} இல் {answered} பதிலளிக்கப்பட்டது",
   sheet_unfilled: "இன்னும் பதிலளிக்கவில்லை",
   sheet_editing: "பதிலை மாற்றுகிறீர்கள்",
+  chat_jump_latest: "சமீபத்திய செய்திக்குச் செல்",
+  chat_status_progress: "கேள்வி {current} / {total}",
+  chat_status_all_answered: "அனைத்துப் பதில்களும் பூர்த்தி செய்யப்பட்டன",
+  chat_transcribed_you_said: "உங்கள் பதில்:",
+  chat_retry_voice: "மீண்டும் பேசு",
+
+  // Review Modal
+  review_modal_title: "உங்கள் விண்ணப்பத்தை சரிபார்க்கவும்",
+  review_modal_subtitle: "இறுதியாக சமர்ப்பிக்கும் முன் கீழே உள்ள அனைத்து பதில்களையும் சரிபார்க்கவும்.",
+  review_missing_warning: "சில கேள்விகளுக்கு இன்னும் பதிலளிக்கப்படவில்லை. சமர்ப்பிக்கும் முன் அனைத்துக் கேள்விகளுக்கும் பதிலளிக்கவும்.",
+  review_field_unanswered: "இன்னும் பதிலளிக்கவில்லை",
+  review_locked_notice: "முக்கிய குறிப்பு: சமர்ப்பித்த பிறகு விண்ணப்பத்தை மாற்றவோ திருத்தவோ முடியாது.",
+  review_btn_confirm: "உறுதிசெய்து சமர்ப்பிக்கவும்",
+  review_btn_back: "திரும்பு",
+  review_btn_submitting: "சமர்ப்பிக்கப்படுகிறது...",
+  review_edit_action: "மாற்று",
+  review_edit_aria: "{field} மாற்று",
+  review_error_title: "விண்ணப்பத்தைச் சமர்ப்பிக்க முடியவில்லை",
+  review_btn_retry: "மீண்டும் சமர்ப்பிக்க முயற்சி செய்",
+
+  // Success Screen
+  success_title: "விண்ணப்பம் வெற்றிகரமாக சமர்ப்பிக்கப்பட்டது",
+  success_ref_label: "விண்ணப்பக் குறிப்பு எண்",
+  success_ref_hint: "உங்கள் விண்ணப்பத்தின் நிலையைத் தெரிந்துகொள்ள இந்தக் குறிப்பு எண்ணைப் பத்திரமாக வைத்திருக்கவும்.",
+  success_btn_copy: "குறிப்பு எண்ணை நகலெடு",
+  success_copied: "நகலெடுக்கப்பட்டது!",
+  success_btn_my_apps: "என் விண்ணப்பங்கள்",
+  success_btn_start_another: "புதிய விண்ணப்பத்தைத் தொடங்கு",
+
+  // Edit Flow
+  edit_reask_intro: "{field} மாற்றப்படுகிறது. தற்போதைய பதில்: \"{currentValue}\". புதிய பதில் என்ன?",
+  edit_banner_label: "{field} மாற்றப்படுகிறது. புதிய பதிலைச் சொல்லவும் அல்லது தட்டச்சு செய்யவும்.",
+  edit_btn_cancel: "ரத்து செய்",
+  edit_row_aria: "{label} மாற்று",
+  status_just_updated: "மாற்றப்பட்டது",
+  status_missing: "விடுபட்டுள்ளது",
 
   // Camera & Documents
   take_photo_doc: "ஆவணத்தை புகைப்படம் எடுக்கவும்",
