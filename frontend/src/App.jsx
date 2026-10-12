@@ -117,7 +117,7 @@ export default function App() {
             <Route
               path="/user"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireRole="user">
                   <UserHome />
                 </ProtectedRoute>
               }
@@ -125,7 +125,7 @@ export default function App() {
             <Route
               path="/fill/:submissionId"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireRole="user">
                   <VoiceChat />
                 </ProtectedRoute>
               }
