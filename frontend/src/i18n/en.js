@@ -205,5 +205,16 @@ export const en = {
   editing_banner: "Changing {field}. Say or type the new answer.",
   btn_keep_old: "Keep old answer",
   toast_published: "Form published",
-  toast_submitted: "Application submitted successfully"
+  toast_submitted: "Application submitted successfully",
+
+  // 404 Not Found
+  not_found_code: "404",
+  not_found_badge: "Page Not Found",
+  not_found_title: "This page does not exist or has been moved",
+  not_found_desc: "The link you followed may be incorrect, or the requested citizen service form may have been archived or removed.",
+  not_found_btn_home: "Back to Home",
+  not_found_btn_services: "Explore Citizen Services",
+  not_found_btn_back: "Go Back",
+  not_found_help_heading: "Looking for a service?",
+  not_found_help_desc: "Browse our full catalogue of citizen welfare services to start a fresh application."
 };

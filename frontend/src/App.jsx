@@ -16,6 +16,7 @@ const FormBuilder = lazy(() =>
 const Submissions = lazy(() =>
   import('./pages/Submissions').then((m) => ({ default: m.Submissions }))
 );
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 const ProtectedRoute = ({ children, requireRole }) => {
   const { user, loading } = useAuth();
@@ -130,7 +131,7 @@ export default function App() {
               }
             />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
