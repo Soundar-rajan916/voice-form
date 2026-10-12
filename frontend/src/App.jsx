@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Login } from './pages/Login';
 import { UserHome } from './pages/UserHome';
 import { VoiceChat } from './pages/VoiceChat';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Loader2 } from 'lucide-react';
 
 // Lazy-load staff routes for bundle optimization
@@ -72,67 +73,69 @@ export default function App() {
             </div>
           }
         >
-          <Routes>
-            <Route path="/" element={<RootRedirect />} />
-            <Route path="/login" element={<Login />} />
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<RootRedirect />} />
+              <Route path="/login" element={<Login />} />
 
 
 
-            {/* Admin (Staff) Routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requireRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/builder/new"
-              element={
-                <ProtectedRoute requireRole="admin">
-                  <FormBuilder />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/builder/:id"
-              element={
-                <ProtectedRoute requireRole="admin">
-                  <FormBuilder />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/forms/:formId/submissions"
-              element={
-                <ProtectedRoute requireRole="admin">
-                  <Submissions />
-                </ProtectedRoute>
-              }
-            />
+              {/* Admin (Staff) Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requireRole="admin">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/builder/new"
+                element={
+                  <ProtectedRoute requireRole="admin">
+                    <FormBuilder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/builder/:id"
+                element={
+                  <ProtectedRoute requireRole="admin">
+                    <FormBuilder />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/forms/:formId/submissions"
+                element={
+                  <ProtectedRoute requireRole="admin">
+                    <Submissions />
+                  </ProtectedRoute>
+                }
+              />
 
 
-            {/* User (Citizen) Routes */}
-            <Route
-              path="/user"
-              element={
-                <ProtectedRoute requireRole="user">
-                  <UserHome />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/fill/:submissionId"
-              element={
-                <ProtectedRoute requireRole="user">
-                  <VoiceChat />
-                </ProtectedRoute>
-              }
-            />
+              {/* User (Citizen) Routes */}
+              <Route
+                path="/user"
+                element={
+                  <ProtectedRoute requireRole="user">
+                    <UserHome />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fill/:submissionId"
+                element={
+                  <ProtectedRoute requireRole="user">
+                    <VoiceChat />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
         </Suspense>
       </BrowserRouter>
     </AuthProvider>

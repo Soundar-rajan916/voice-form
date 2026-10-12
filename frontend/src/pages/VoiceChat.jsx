@@ -199,13 +199,13 @@ export const VoiceChat = () => {
   };
 
   const scrollToBottom = (behavior = 'smooth') => {
-    chatEndRef.current?.scrollIntoView({ behavior });
+    chatEndRef.current?.scrollIntoView?.({ behavior });
     setIsScrolledUp(false);
   };
 
   useEffect(() => {
     if (!isScrolledUp) {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      chatEndRef.current?.scrollIntoView?.({ behavior: 'smooth' });
     }
   }, [chatMessages, isScrolledUp]);
 
@@ -642,7 +642,6 @@ export const VoiceChat = () => {
       {/* Submission Success Modal */}
       <SubmissionSuccessModal
         isOpen={successModalOpen}
-        referenceNumber={referenceNumber}
         formTitle={formTitle}
         uiLang={uiLang}
       />
