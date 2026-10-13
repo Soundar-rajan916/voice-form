@@ -272,4 +272,112 @@ describe('VoiceChat UI/UX Flows', () => {
       expect(cancelBtn).toBeDefined();
     });
   });
+
+  describe('Choice Questions Preview Flow', () => {
+    const choiceField = {
+      id: 3,
+      field_name: 'gender',
+      data_type: 'Choice',
+      choices: ['Male', 'Female', 'Transgender'],
+      required: true,
+      question_en: 'What is your gender?',
+      question_ta: 'உங்கள் பாலினம் என்ன?'
+    };
+
+    it('renders all choices in the preview row and indicates selected choice', () => {
+      const handleSelectChoice = vi.fn();
+
+      render(
+        <SheetRow
+          field={choiceField}
+          answer="Female"
+          isCurrent={true}
+          isEditing={false}
+          isDisabled={false}
+          onSelectChoice={handleSelectChoice}
+          uiLang="en"
+        />
+      );
+
+      // Verify all choice buttons are rendered
+      expect(screen.getByRole('button', { name: /Select Male/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Select Female/i })).toBeDefined();
+      expect(screen.getByRole('button', { name: /Select Transgender/i })).toBeDefined();
+
+      // Selected choice Female has aria-pressed true
+      const femaleBtn = screen.getByRole('button', { name: /Select Female/i });
+      expect(femaleBtn.getAttribute('aria-pressed')).toBe('true');
+
+      // Male has aria-pressed false
+      const maleBtn = screen.getByRole('button', { name: /Select Male/i });
+      expect(maleBtn.getAttribute('aria-pressed')).toBe('false');
+
+      // Clicking an option invokes onSelectChoice with field.id and choice
+      fireEvent.click(maleBtn);
+      expect(handleSelectChoice).toHaveBeenCalledWith(3, 'Male');
+    });
+
+    it('renders choice options in Sheet and forwards onSelectChoice', () => {
+      const handleSelectChoice = vi.fn();
+
+      render(
+        <Sheet
+          fields={[choiceField]}
+          answers={{ 3: 'Male' }}
+          currentFieldId={3}
+          onSelectChoice={handleSelectChoice}
+          uiLang="en"
+        />
+      );
+
+      const tgBtn = screen.getByRole('button', { name: /Select Transgender/i });
+      expect(tgBtn).toBeDefined();
+
+      fireEvent.click(tgBtn);
+      expect(handleSelectChoice).toHaveBeenCalledWith(3, 'Transgender');
+    });
+  });
+
+  describe('Automatic Mic State Flow', () => {
+    it('MicControl correctly reflects automatic listening, speech-detected, and processing states', () => {
+      const handleTapMic = vi.fn();
+
+      const { rerender } = render(
+        <MicControl
+          vadState="listening"
+          isListening={true}
+          permissionState="granted"
+          isDisabled={false}
+          onTapMic={handleTapMic}
+          uiLang="en"
+        />
+      );
+
+      expect(screen.getByRole('button', { name: /Listening/i })).toBeDefined();
+
+      rerender(
+        <MicControl
+          vadState="speech_detected"
+          isListening={true}
+          permissionState="granted"
+          isDisabled={false}
+          onTapMic={handleTapMic}
+          uiLang="en"
+        />
+      );
+      expect(screen.getByRole('button', { name: /Listening/i })).toBeDefined();
+
+      rerender(
+        <MicControl
+          vadState="processing"
+          isListening={false}
+          permissionState="granted"
+          isDisabled={false}
+          onTapMic={handleTapMic}
+          uiLang="en"
+        />
+      );
+      expect(screen.getByRole('button', { name: /Understanding your answer/i })).toBeDefined();
+    });
+  });
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Edit2, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Edit2, AlertTriangle, AlertCircle, Loader2, Check } from 'lucide-react';
 import { getTranslation } from '../i18n';
 
 export const ReviewModal = ({
@@ -180,6 +180,18 @@ export const ReviewModal = ({
               const hasVal = val !== undefined && val !== null && String(val).trim() !== '';
               const rawLabel = field.field_name ? field.field_name.replace(/_/g, ' ') : '';
               const editAria = t('review_edit_aria', { field: rawLabel });
+              const rawChoices = field.choices;
+              let choicesList = [];
+              if (Array.isArray(rawChoices)) {
+                choicesList = rawChoices;
+              } else if (typeof rawChoices === 'string') {
+                try {
+                  const parsed = JSON.parse(rawChoices);
+                  if (Array.isArray(parsed)) choicesList = parsed;
+                } catch {
+                  choicesList = rawChoices.split(',').map((c) => c.trim()).filter(Boolean);
+                }
+              }
 
               return (
                 <div
@@ -199,6 +211,31 @@ export const ReviewModal = ({
                         </span>
                       )}
                     </div>
+
+                    {choicesList.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5 pt-0.5">
+                        {choicesList.map((choice, idx) => {
+                          const isSelected =
+                            hasVal &&
+                            String(val).trim().toLowerCase() === String(choice).trim().toLowerCase();
+                          return (
+                            <span
+                              key={idx}
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium font-body border ${
+                                isSelected
+                                  ? 'bg-[#1F3FBF] text-white border-[#1F3FBF]'
+                                  : 'bg-[#E3D5CA]/40 text-[#524E4A] border-[#D6CCC2]'
+                              }`}
+                            >
+                              {isSelected && (
+                                <Check className="w-3 h-3 mr-1 shrink-0" aria-hidden="true" />
+                              )}
+                              <span>{choice}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <button

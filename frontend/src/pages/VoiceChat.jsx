@@ -676,9 +676,8 @@ export const VoiceChat = () => {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`min-h-screen bg-[#EDEDE9] text-[#1C1917] flex flex-col relative font-body ${
-        isSubmitted ? 'overflow-y-auto' : 'h-screen overflow-hidden'
-      }`}
+      className={`min-h-screen bg-[#EDEDE9] text-[#1C1917] flex flex-col relative font-body ${isSubmitted ? 'overflow-y-auto' : 'h-screen overflow-hidden'
+        }`}
     >
       <Navbar
         uiLang={uiLang}

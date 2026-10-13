@@ -128,6 +128,10 @@ FEW-SHOT EXAMPLES:
    Output: {{"intent": "answer", "value": "சவுந்தரராஜன்", "fulfilled": true, "incomplete": false, "follow_up": null}}
 5. Input: "my phone number is 908096" (field: "mobile_no", description: "10 digit phone number")
    Output: {{"intent": "answer", "value": "908096", "fulfilled": false, "incomplete": true, "follow_up": "Your phone number is missing 4 digits. Could you please provide the full 10 digits?"}}
+6. Input: "mail" (field: "gender", choices: ["Male", "Female", "Transgender"])
+   Output: {{"intent": "answer", "value": "Male", "fulfilled": true, "incomplete": false, "follow_up": null}}
+7. Input: "females" (field: "gender", choices: ["Male", "Female", "Transgender"])
+   Output: {{"intent": "answer", "value": "Female", "fulfilled": true, "incomplete": false, "follow_up": null}}
 
 EXTRACTION RULES:
 1. Extract ONLY the value that satisfies the description. Strip filler words ("my name is", "people call me"), conversational prefixes, and trailing periods.
@@ -136,6 +140,7 @@ EXTRACTION RULES:
 4. If the answer is incomplete, set incomplete = true, fulfilled = false, and write a targeted follow-up in the user's language asking ONLY for what is missing.
 5. If the utterance does not satisfy the description, set fulfilled = false and provide a polite, targeted follow-up asking for what is missing (NEVER repeat the original question word-for-word).
 6. CRITICAL: NEVER return or include ANY emojis, emoticons, or pictographs under any circumstances. Both 'value' and 'follow_up' MUST be clean plain text only without any emojis.
+7. For Choice/Gender fields, map spoken homophones accurately: "mail" or "main" -> "Male"; "females" or "femail" -> "Female"; "ஆண்" -> "Male"; "பெண்" -> "Female". Never confuse "mail" with "Female".
 
 OUTPUT FORMAT: STRICT JSON ONLY with keys: intent, value, fulfilled, incomplete, follow_up, target_field."""
 

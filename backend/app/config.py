@@ -55,6 +55,16 @@ class Settings(BaseSettings):
     SILENCE_PHONE_MS: int = 1200
     SILENCE_DATE_MS: int = 1200
 
+    # SMTP / Gmail Notification Settings
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "" # e.g. "yourname@gmail.com"
+    SMTP_PASSWORD: str = "" # Gmail App Password (16 characters)
+    SMTP_FROM_EMAIL: str = "" # Defaults to SMTP_USER
+    SMTP_FROM_NAME: str = "Citizen Service Centre"
+    SMTP_USE_TLS: bool = True
+    ENABLE_EMAIL_NOTIFICATIONS: bool = True
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -90,7 +90,7 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
           setPermissionState(res.state);
           res.onchange = () => setPermissionState(res.state);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, []);
 
@@ -115,7 +115,7 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
         if (mediaRecorderRef.current.stream) {
           mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
         }
-      } catch (err) {}
+      } catch (err) { }
       mediaRecorderRef.current = null;
     }
 

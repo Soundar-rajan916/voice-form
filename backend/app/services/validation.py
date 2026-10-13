@@ -59,6 +59,23 @@ def fast_path_validate(
             return True, "No"
 
     elif data_type == "Choice" and choices:
+        is_gender = bool(field_name and "gender" in field_name.lower()) or (
+            any(c.lower() == "male" for c in choices) and any(c.lower() == "female" for c in choices)
+        )
+        if is_gender:
+            if clean_text in ["mail", "male", "mael", "man", "boy", "ஆண்"]:
+                for opt in choices:
+                    if opt.strip().lower() == "male":
+                        return True, opt.strip()
+            elif clean_text in ["female", "females", "femail", "fe-male", "woman", "girl", "பெண்"]:
+                for opt in choices:
+                    if opt.strip().lower() == "female":
+                        return True, opt.strip()
+            elif clean_text in ["transgender", "trans", "திருநங்கை", "மூன்றாம் பாலினம்"]:
+                for opt in choices:
+                    if "trans" in opt.strip().lower() or opt.strip().lower() == "transgender":
+                        return True, opt.strip()
+
         for opt in choices:
             if clean_text == opt.strip().lower():
                 return True, opt.strip()
@@ -146,9 +163,34 @@ def validate_rule(
 
     elif data_type == "Choice" and choices:
         val_lower = val_str.lower()
+        is_gender = bool(field_name and "gender" in field_name.lower()) or (
+            any(c.lower() == "male" for c in choices) and any(c.lower() == "female" for c in choices)
+        )
+        if is_gender:
+            if val_lower in ["mail", "male", "mael", "man", "boy", "ஆண்"]:
+                for opt in choices:
+                    if opt.strip().lower() == "male":
+                        return True, opt.strip(), None
+            elif val_lower in ["female", "females", "femail", "fe-male", "woman", "girl", "பெண்"]:
+                for opt in choices:
+                    if opt.strip().lower() == "female":
+                        return True, opt.strip(), None
+            elif val_lower in ["transgender", "trans", "திருநங்கை", "மூன்றாம் பாலினம்"]:
+                for opt in choices:
+                    if "trans" in opt.strip().lower() or opt.strip().lower() == "transgender":
+                        return True, opt.strip(), None
+
+        # 1. Exact match
         for opt in choices:
-            if val_lower == opt.lower() or val_lower in opt.lower() or opt.lower() in val_lower:
+            if val_lower == opt.strip().lower():
                 return True, opt.strip(), None
+
+        # 2. Whole word boundary match (to avoid "mail" matching inside "female")
+        for opt in choices:
+            opt_clean = opt.strip()
+            if re.search(r"\b" + re.escape(opt_clean.lower()) + r"\b", val_lower):
+                return True, opt_clean, None
+
         return False, val_str, f"Must be one of: {', '.join(choices)}"
 
     # Default String validation

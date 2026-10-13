@@ -10,14 +10,19 @@ SPOKEN_NUMBER_MAP = {
 
 KNOWN_EMAIL_DOMAINS = ["gmail", "yahoo", "outlook", "hotmail", "icloud"]
 
-def normalize_transcript(text: str, data_type: Optional[str] = None) -> str:
+def normalize_transcript(
+    text: str,
+    data_type: Optional[str] = None,
+    field_name: Optional[str] = None
+) -> str:
     """
-    Deterministic normalizer (Fix E) applied before LLM, validation, and grounding.
+    Deterministic normalizer applied before LLM, validation, and grounding.
     1. Collapse runs of single letters/digits separated by spaces, commas, or hyphens into one token.
     2. Maps spoken symbols ('at', 'at the rate', 'dot', 'period', 'dash', 'underscore') to (@, ., -, _).
     3. Handles 'double X' and 'triple X' repetitions.
     4. Normalizes Emails: lowercases, removes spaces, appends standard TLD (.com) if domain is a known provider without TLD.
     5. Normalizes Names: collapses spaced letters, strips filler prefixes, and title-cases.
+    6. Normalizes Gender homophones: 'mail' -> 'Male', 'females' -> 'Female', etc.
     """
     if not text or not text.strip():
         return ""
@@ -79,5 +84,15 @@ def normalize_transcript(text: str, data_type: Optional[str] = None) -> str:
             cleaned = re.sub(prefix, "", cleaned, flags=re.IGNORECASE)
         cleaned = cleaned.rstrip(".!?,")
         cleaned = cleaned.title()
+
+    # 7. Gender specific normalization
+    if (field_name and "gender" in field_name.lower()) or (data_type == "Choice" and field_name and "gender" in field_name.lower()):
+        lower_c = cleaned.lower()
+        if lower_c in ["mail", "male", "mael", "man", "boy", "ஆண்"]:
+            return "Male"
+        elif lower_c in ["female", "females", "femail", "fe-male", "woman", "girl", "பெண்"]:
+            return "Female"
+        elif lower_c in ["transgender", "trans", "திருநங்கை", "மூன்றாம் பாலினம்"]:
+            return "Transgender"
 
     return cleaned.strip()

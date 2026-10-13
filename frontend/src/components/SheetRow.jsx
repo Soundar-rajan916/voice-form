@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Edit2, AlertCircle, CheckCircle2, Check } from 'lucide-react';
 import { getTranslation } from '../i18n';
 
 export const SheetRow = ({
@@ -10,6 +10,7 @@ export const SheetRow = ({
   isUpdated = false,
   isDisabled = false,
   onSelectField,
+  onSelectChoice,
   uiLang = 'en'
 }) => {
   const t = (key, params) => getTranslation(uiLang, key, params);
@@ -18,6 +19,22 @@ export const SheetRow = ({
   const rawLabel = field.field_name ? field.field_name.replace(/_/g, ' ') : '';
   const label = uiLang === 'ta' && field.question_ta ? field.question_ta : rawLabel;
   const editAria = t('edit_row_aria', { label: rawLabel });
+
+  // Safe choices extraction
+  const rawChoices = field.choices;
+  let choicesList = [];
+  if (Array.isArray(rawChoices)) {
+    choicesList = rawChoices;
+  } else if (typeof rawChoices === 'string') {
+    try {
+      const parsed = JSON.parse(rawChoices);
+      if (Array.isArray(parsed)) {
+        choicesList = parsed;
+      }
+    } catch {
+      choicesList = rawChoices.split(',').map((c) => c.trim()).filter(Boolean);
+    }
+  }
 
   const handleClick = () => {
     if (!isDisabled && onSelectField) {
@@ -98,6 +115,49 @@ export const SheetRow = ({
           )}
         </div>
       </div>
+
+      {/* Choice options list in preview for choice questions */}
+      {choicesList.length > 0 && (
+        <div
+          className="mt-2 flex flex-wrap gap-1.5 pt-0.5"
+          role="group"
+          aria-label={`Choices for ${rawLabel}`}
+        >
+          {choicesList.map((choice, idx) => {
+            const isSelected =
+              hasValue &&
+              String(answer).trim().toLowerCase() === String(choice).trim().toLowerCase();
+            return (
+              <button
+                key={idx}
+                type="button"
+                disabled={isDisabled}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isDisabled && onSelectChoice) {
+                    onSelectChoice(field.id, choice);
+                  }
+                }}
+                className={`inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md text-xs font-medium font-body transition-all cursor-pointer border ${
+                  isSelected
+                    ? 'bg-[#1F3FBF] text-white border-[#1F3FBF] shadow-xs'
+                    : isCurrent
+                    ? 'bg-[#F5EBE0] text-[#1C1917] border-[#D6CCC2] hover:bg-[#E3D5CA] hover:border-[#1F3FBF]/50'
+                    : 'bg-[#E3D5CA]/60 text-[#1C1917] border-[#D6CCC2] hover:bg-[#E3D5CA]'
+                } disabled:opacity-75 disabled:cursor-default`}
+                title={`Select ${choice}`}
+                aria-label={`Select ${choice}`}
+                aria-pressed={isSelected}
+              >
+                {isSelected && (
+                  <Check className="w-3 h-3 mr-1 shrink-0" aria-hidden="true" />
+                )}
+                <span>{choice}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

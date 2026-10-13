@@ -16,6 +16,7 @@ from app.services.normalizer import normalize_transcript
 from app.services.grounding import verify_grounding
 from app.services.filters import check_echo_guard, check_hallucination_filter
 from app.services.crypto import encrypt_field_value, mask_field_value
+from app.services.email_service import dispatch_submission_email
 from app.config import settings
 from datetime import datetime, timedelta
 
@@ -246,6 +247,9 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                                     sub.retention_expires_at = now + timedelta(days=settings.RETENTION_DAYS)
                                 await db.commit()
 
+                        # Dispatch email with submitted form details to user's Gmail in background
+                        asyncio.create_task(dispatch_submission_email(submission_id))
+
                         sub_msg = session.build_state_dict()
                         sub_msg.update({
                             "type": "submitted",
@@ -375,7 +379,11 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     "language": detected_lang
                 })
 
-                normalized_text = normalize_transcript(transcript, current_field.data_type if current_field else None)
+                normalized_text = normalize_transcript(
+                    transcript,
+                    current_field.data_type if current_field else None,
+                    current_field.field_name if current_field else None
+                )
 
                 # Navigation Command Parse
                 nav_intent, target_fid, amb_fields, amb_msg = parse_navigation_command(
@@ -509,11 +517,13 @@ async def websocket_submission_endpoint(websocket: WebSocket, submission_id: int
                     target_field_id = text_data.get("field_id", current_field.id if current_field else None)
                     if target_field_id and val:
                         target_field_obj = session.get_field_by_id(target_field_id) or current_field
-                        normalized_val = normalize_transcript(val, target_field_obj.data_type)
-
                         f_name = target_field_obj.field_name if target_field_obj else None
-                        is_valid, cleaned, err = validate_rule(normalized_val, target_field_obj.data_type, target_field_obj.choices, field_name=f_name)
-                        is_grd, g_reason = verify_grounding(cleaned if is_valid else normalized_val, val, target_field_obj.data_type)
+                        d_type = target_field_obj.data_type if target_field_obj else None
+                        f_choices = target_field_obj.choices if target_field_obj else None
+                        normalized_val = normalize_transcript(val, d_type, f_name)
+
+                        is_valid, cleaned, err = validate_rule(normalized_val, d_type, f_choices, field_name=f_name)
+                        is_grd, g_reason = verify_grounding(cleaned if is_valid else normalized_val, val, d_type)
 
                         if is_valid and is_grd:
                             is_sens = getattr(target_field_obj, "is_sensitive_number", False) if target_field_obj else False

@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from app.deps import require_user, check_submission_access
 from app.services.submission_title import compute_submission_title, compute_submission_titles_batch
 from app.services.crypto import encrypt_field_value, decrypt_field_value, mask_field_value
 from app.services.audit import record_audit_event
+from app.services.email_service import dispatch_submission_email
 
 router = APIRouter(tags=["user-submissions"])
 
@@ -399,6 +401,9 @@ async def complete_submission(
             sub.retention_expires_at = now + timedelta(days=settings.RETENTION_DAYS)
 
         await db.commit()
+
+        # Dispatch email with submitted form details to user's Gmail in background
+        asyncio.create_task(dispatch_submission_email(sub.id))
 
         await record_audit_event(
             db,

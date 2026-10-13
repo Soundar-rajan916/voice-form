@@ -16,6 +16,7 @@ export const Sheet = ({
   submitting = false,
   onSubmit, // opens review modal
   onGotoField,
+  onSelectChoice,
   uiLang = "en"
 }) => {
   const isSubmitted = submissionStatus === 'submitted' || submissionStatus === 'completed';
@@ -67,6 +68,7 @@ export const Sheet = ({
               isEditing={isEditing}
               isDisabled={isSubmitted}
               onSelectField={onGotoField}
+              onSelectChoice={onSelectChoice}
               uiLang={uiLang}
             />
           );
@@ -84,8 +86,8 @@ export const Sheet = ({
           {isSubmitted
             ? t('btn_submitted')
             : submitting
-            ? t('review_btn_submitting')
-            : t('btn_review_and_submit')}
+              ? t('review_btn_submitting')
+              : t('btn_review_and_submit')}
         </button>
 
         {/* Status text */}

@@ -1,5 +1,5 @@
 export const brandConfig = {
-  appName: import.meta.env.VITE_APP_NAME || 'Citizen Desk',
+  appName: import.meta.env.VITE_APP_NAME || 'CITIZEN DESK',
   appNameTa: 'குடிமக்கள் சேவை மையம்',
   officeName: import.meta.env.VITE_OFFICE_NAME || 'Citizen Service Centre',
   officeNameTa: 'சேவை மையம்',

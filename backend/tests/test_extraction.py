@@ -110,3 +110,31 @@ async def test_extract_answer_strips_emojis_from_value():
     assert "😊" not in result.value
     assert result.value == "Soundararajan"
 
+def test_gender_homophones_fast_path_and_validation():
+    choices = ["Male", "Female", "Transgender"]
+
+    # "mail" transcribed by STT must resolve to "Male", NOT "Female"
+    is_fast, val = fast_path_validate("mail", "Choice", choices=choices, field_name="gender")
+    assert is_fast is True
+    assert val == "Male"
+
+    valid, clean, err = validate_rule("mail", "Choice", choices=choices, field_name="gender")
+    assert valid is True
+    assert clean == "Male"
+
+    # "females" transcribed by STT must resolve to "Female"
+    is_fast_f, val_f = fast_path_validate("females", "Choice", choices=choices, field_name="gender")
+    assert is_fast_f is True
+    assert val_f == "Female"
+
+    valid_f, clean_f, err_f = validate_rule("females", "Choice", choices=choices, field_name="gender")
+    assert valid_f is True
+    assert clean_f == "Female"
+
+def test_gender_normalizer():
+    from app.services.normalizer import normalize_transcript
+    assert normalize_transcript("mail", "Choice", "gender") == "Male"
+    assert normalize_transcript("females", "Choice", "gender") == "Female"
+    assert normalize_transcript("ஆண்", "Choice", "gender") == "Male"
+
+
