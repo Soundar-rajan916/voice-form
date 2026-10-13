@@ -24,14 +24,8 @@ describe('i18n Translation Placeholder Integrity', () => {
 
   it('replaces all placeholders when parameters are provided', () => {
     const paramsMap = {
-      login_title: { appName: 'Citizen Desk' },
-      kiosk_privacy_text: { days: 30 },
-      kiosk_idle_text: { seconds: 15 },
       welcome_msg: { title: 'Pension Form' },
       sheet_progress: { answered: 2, total: 4 },
-      name_confirm_prompt: { value: 'Kumar' },
-      editing_banner: { field: 'Phone number' },
-      lang_active_badge: { lang: 'English' },
       chat_status_progress: { current: 1, total: 5 },
       review_edit_aria: { field: 'Email' },
       edit_reask_intro: { field: 'Address', currentValue: '123 Main St' },
@@ -56,14 +50,8 @@ describe('i18n Translation Placeholder Integrity', () => {
 
   it('scans all translation keys in en and ta to ensure no stray unescaped placeholders exist in static strings', () => {
     const knownParameterizedKeys = new Set([
-      'login_title',
-      'kiosk_privacy_text',
-      'kiosk_idle_text',
       'welcome_msg',
       'sheet_progress',
-      'name_confirm_prompt',
-      'editing_banner',
-      'lang_active_badge',
       'chat_status_progress',
       'review_edit_aria',
       'edit_reask_intro',
