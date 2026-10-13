@@ -64,37 +64,22 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
   }, [onSpeechEnd]);
 
   const disabledRef = useRef(disabled);
-  useEffect(() => {
-    disabledRef.current = disabled;
-    if (disabled && isListening) {
-      stopListening();
+  const wasListeningRef = useRef(false);
+
+  const pauseListening = useCallback(async () => {
+    if (vadRef.current && typeof vadRef.current.pause === 'function') {
+      try {
+        await vadRef.current.pause();
+      } catch (err) {
+        console.error('Error pausing VAD:', err);
+      }
     }
-  }, [disabled, isListening]);
-
-  const silenceDurationMsRef = useRef(silenceDurationMs);
-  useEffect(() => {
-    silenceDurationMsRef.current = silenceDurationMs;
-  }, [silenceDurationMs]);
-
-  const isListeningRef = useRef(isListening);
-  useEffect(() => {
-    isListeningRef.current = isListening;
-  }, [isListening]);
-
-  // Check microphone permissions
-  useEffect(() => {
-    if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions
-        .query({ name: 'microphone' })
-        .then((res) => {
-          setPermissionState(res.state);
-          res.onchange = () => setPermissionState(res.state);
-        })
-        .catch(() => { });
-    }
+    setVadState('idle');
+    setIsListening(false);
   }, []);
 
   const stopListening = useCallback(async () => {
+    wasListeningRef.current = false;
     // 1. Stop VAD instance if running
     if (vadRef.current) {
       try {
@@ -126,6 +111,20 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
 
   const startListening = useCallback(async () => {
     if (disabledRef.current || isInitializingRef.current || isListeningRef.current) return;
+
+    // Fast-path: if VAD instance is already created, simply start/resume listening
+    if (vadRef.current && typeof vadRef.current.start === 'function') {
+      try {
+        setIsListening(true);
+        setVadState('listening');
+        await vadRef.current.start();
+        return;
+      } catch (err) {
+        console.warn('[useVad] Resume error, will re-create VAD:', err);
+        vadRef.current = null;
+      }
+    }
+
     isInitializingRef.current = true;
     setErrorDetails(null);
 
@@ -181,17 +180,16 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
         },
         onSpeechEnd: (audio) => {
           setVadState('processing');
+          setIsListening(false);
+          if (vadRef.current && typeof vadRef.current.pause === 'function') {
+            vadRef.current.pause().catch(() => {});
+          }
           if (audio && audio.length > 0) {
             const wavBuffer = encodeWAV(audio, 16000);
             if (onSpeechEndRef.current) {
               onSpeechEndRef.current(wavBuffer);
             }
           }
-          setTimeout(() => {
-            if (isListeningRef.current) {
-              setVadState('listening');
-            }
-          }, 300);
         }
       });
 
@@ -247,10 +245,50 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
     }
   }, []);
 
+  useEffect(() => {
+    const prevDisabled = disabledRef.current;
+    disabledRef.current = disabled;
+
+    if (disabled) {
+      if (isListeningRef.current) {
+        wasListeningRef.current = true;
+        pauseListening();
+      }
+    } else if (prevDisabled && wasListeningRef.current) {
+      wasListeningRef.current = false;
+      startListening();
+    }
+  }, [disabled, pauseListening, startListening]);
+
+  const silenceDurationMsRef = useRef(silenceDurationMs);
+  useEffect(() => {
+    silenceDurationMsRef.current = silenceDurationMs;
+  }, [silenceDurationMs]);
+
+  const isListeningRef = useRef(isListening);
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+
+  // Check microphone permissions
+  useEffect(() => {
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions
+        .query({ name: 'microphone' })
+        .then((res) => {
+          setPermissionState(res.state);
+          res.onchange = () => setPermissionState(res.state);
+        })
+        .catch(() => { });
+    }
+  }, []);
+
   const toggleListening = useCallback(() => {
     if (isListeningRef.current) {
+      wasListeningRef.current = false;
       stopListening();
     } else {
+      wasListeningRef.current = true;
       startListening();
     }
   }, [startListening, stopListening]);

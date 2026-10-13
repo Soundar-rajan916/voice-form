@@ -84,7 +84,9 @@ export const useSpeech = (enabled = true, onTamilVoiceMissing = null) => {
           timeoutRef.current = null;
         }
         setIsSpeaking(false);
-        if (onEnd) onEnd();
+        setTimeout(() => {
+          if (onEnd) onEnd();
+        }, 30);
       };
 
       utterance.onstart = () => setIsSpeaking(true);

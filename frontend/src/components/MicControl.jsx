@@ -22,12 +22,12 @@ export const MicControl = ({
     activeState = 'error_no_speech';
   } else if (micError === 'network') {
     activeState = 'error_network';
+  } else if (permissionState === 'prompt' && isListening) {
+    activeState = 'requesting_permission';
   } else if (vadState === 'processing') {
     activeState = 'processing';
   } else if (isListening || vadState === 'listening' || vadState === 'speech_detected') {
     activeState = 'listening';
-  } else if (permissionState === 'prompt' && isListening) {
-    activeState = 'requesting_permission';
   }
 
   const getStatusLabel = () => {

@@ -129,7 +129,7 @@ export const VoiceChat = () => {
   } = useVad({
     onSpeechEnd: handleSpeechEnd,
     silenceDurationMs,
-    disabled: isSpeaking || isSubmitted
+    disabled: isSpeaking || isSubmitted || privacyModalOpen
   });
 
   const promptFieldQuestionRef = useRef(null);
@@ -420,6 +420,10 @@ export const VoiceChat = () => {
       else if (data.type === 'drop_silent') {
         setLatestTiming(data.debug_info || null);
         setMicError('no_speech');
+        setTimeout(() => {
+          setMicError(null);
+          startListeningRef.current?.();
+        }, 1200);
       }
 
       else if (data.type === 'mic_resumed') {
@@ -626,7 +630,10 @@ export const VoiceChat = () => {
       setPendingUploadFile(null);
       handleUploadFile(fileToUpload);
     }
-  }, [pendingUploadFile]);
+    if (currentField && !isSubmitted) {
+      promptFieldQuestionRef.current?.(currentField, uiLangRef.current);
+    }
+  }, [pendingUploadFile, currentField, isSubmitted]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
