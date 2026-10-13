@@ -132,9 +132,4 @@ export const userFormsApi = {
       method: 'POST',
       body: JSON.stringify(answers || []),
     }),
-  submitSubmission: (id, answers) =>
-    apiRequest(`/submissions/${id}/submit`, {
-      method: 'POST',
-      body: JSON.stringify(answers || []),
-    }),
 };
