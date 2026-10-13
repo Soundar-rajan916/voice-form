@@ -30,19 +30,8 @@
   --color-warning: #9A3412;
   --color-danger: #B3261E;
 
-  /* Backward compatibility alias tokens */
-  --color-sheet: #F5EBE0;
-  --color-counter: #D6CCC2;
-  --color-highlighter: #D5BDAF;
-  --color-petal: #E3D5CA;
-  --color-charcoal: #1C1917;
-  --color-pen-blue: #1F3FBF;
-  --color-stamp-violet: #1F3FBF;
-  --color-error: #B3261E;
-
   --font-display: 'Khand', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
   --font-body: 'Noto Sans', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: 'Khand', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Khand', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Noto Sans', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
   --font-sans-ui: 'Noto Sans', 'Noto Sans Tamil', ui-sans-serif, system-ui, sans-serif;
@@ -96,8 +85,7 @@
 }
 
 /* Typography Utility Classes */
-.font-display,
-.font-khand {
+.font-display {
   font-family: var(--font-display) !important;
 }
 
@@ -105,21 +93,6 @@
 .font-sans,
 .font-sans-ui {
   font-family: var(--font-body) !important;
-}
-
-/* Section label: small caps with body font instead of monospace */
-.section-label {
-  font-family: var(--font-body);
-  font-variant-caps: all-small-caps;
-  letter-spacing: 0.08em;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-/* Chat text specifications */
-.chat-user-text {
-  font-size: 18px;
-  line-height: 1.5;
 }
 
 .chat-bot-question {
@@ -174,19 +147,4 @@
 .sheet-shadow {
   box-shadow: 0 4px 16px -2px rgba(28, 25, 23, 0.06), 0 2px 4px -2px rgba(28, 25, 23, 0.04);
 }
-
-/* Received / Submitted Rubber Stamp */
-.stamp-overlay {
-  border: 3px solid var(--color-action-blue);
-  color: var(--color-action-blue);
-  font-family: var(--font-display);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transform: rotate(-6deg);
-  border-radius: 6px;
-  background-color: var(--color-linen);
-  display: inline-block;
-  padding: 6px 14px;
-  box-shadow: 0 0 0 1px var(--color-action-blue);
-}
+
