@@ -1,13 +1,12 @@
 import io
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 from docx import Document as DocxDocument
 import pypdf
 
-from app.config import settings
 from app.models import FormField
 from app.services.document_parser import (
-    parse_pdf_document, parse_docx_document, is_garbled_text
+    parse_docx_document, is_garbled_text
 )
 from app.services.document_extractor import extract_proposals_from_document
 from app.services.vision_reader import DocumentReader
@@ -37,7 +36,7 @@ class MockVisionReader(DocumentReader):
 def create_sample_pdf(pages_text: list) -> bytes:
     writer = pypdf.PdfWriter()
     for text in pages_text:
-        page = writer.add_blank_page(width=612, height=792)
+        writer.add_blank_page(width=612, height=792)
         if text:
             # Simple text addition simulation in PyPDF writer
             pass

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from PIL import Image
 from sqlalchemy import select
 
-from app.models import User, Form, FormVersion, FormField, Submission, SubmissionAnswer, AuditLog
+from app.models import User, Form, FormVersion, FormField, Submission
 from app.security import create_access_token
 from app.services.crypto import encrypt_sensitive_value, decrypt_sensitive_value, mask_sensitive_value, check_auto_sensitive_field
 from app.services.retention import cleanup_expired_submissions

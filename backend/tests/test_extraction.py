@@ -1,7 +1,6 @@
 import pytest
 from app.services.validation import fast_path_validate, validate_rule
 from app.services.extraction import extract_answer, _clean_json_response
-from app.schemas import ExtractionResult
 
 def test_string_field_never_takes_fast_path():
     # String field must NEVER take fast path

@@ -1,12 +1,8 @@
-import pytest
 from unittest.mock import MagicMock
 from app.models import FormField, Submission, FormVersion
 from app.services.session import FormSessionManager
-from app.services.normalizer import normalize_transcript
-from app.services.grounding import verify_grounding
-from app.services.filters import check_echo_guard, check_hallucination_filter
+from app.services.filters import check_hallucination_filter
 from app.services.navigation import parse_navigation_command
-from app.services.validation import validate_rule
 
 def create_mock_field(id: int, name: str, data_type: str, required: bool = True, position: int = 0):
     field = MagicMock(spec=FormField)

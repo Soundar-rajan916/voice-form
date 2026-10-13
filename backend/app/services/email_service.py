@@ -4,7 +4,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Tuple
 from datetime import datetime
 
 from sqlalchemy import select
@@ -12,9 +12,8 @@ from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.db import AsyncSessionLocal
-from app.models import Submission, FormVersion, SubmissionAnswer, FormField
+from app.models import Submission, FormVersion
 from app.services.crypto import decrypt_field_value, mask_field_value
-from app.services.submission_title import compute_submission_title
 
 logger = logging.getLogger(__name__)
 
