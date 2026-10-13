@@ -37,7 +37,7 @@ describe('VoiceChat UI/UX Flows', () => {
       const handleTapMic = vi.fn();
 
       // In completed state, isDisabled is true on MicControl
-      const { rerender } = render(
+      render(
         <MicControl
           vadState="idle"
           isListening={false}

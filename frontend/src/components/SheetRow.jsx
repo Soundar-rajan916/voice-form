@@ -17,7 +17,6 @@ export const SheetRow = ({
   const hasValue = answer !== undefined && answer !== null && String(answer).trim() !== '';
 
   const rawLabel = field.field_name ? field.field_name.replace(/_/g, ' ') : '';
-  const label = uiLang === 'ta' && field.question_ta ? field.question_ta : rawLabel;
   const editAria = t('edit_row_aria', { label: rawLabel });
 
   // Safe choices extraction

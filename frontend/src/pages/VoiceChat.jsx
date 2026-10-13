@@ -717,7 +717,7 @@ export const VoiceChat = () => {
           raw_transcript: answers[f.id] || null,
           language: uiLang
         }));
-        const res = await userFormsApi.completeSubmission(submissionId, answersPayload);
+        await userFormsApi.completeSubmission(submissionId, answersPayload);
         setSubmitting(false);
         setSubmissionStatus('submitted');
         setReviewModalOpen(false);

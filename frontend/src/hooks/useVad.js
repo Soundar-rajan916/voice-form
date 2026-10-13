@@ -115,7 +115,7 @@ export const useVad = ({ onSpeechEnd, silenceDurationMs = 600, disabled = false 
         if (mediaRecorderRef.current.stream) {
           mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
         }
-      } catch (err) { }
+      } catch { }
       mediaRecorderRef.current = null;
     }
 

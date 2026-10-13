@@ -100,7 +100,7 @@ export const useSpeech = (enabled = true, onTamilVoiceMissing = null) => {
 
       try {
         window.speechSynthesis.speak(utterance);
-      } catch (err) {
+      } catch {
         finishSpeech();
       }
     },
