@@ -18,7 +18,7 @@ import { SubmissionSuccessModal } from '../components/SubmissionSuccessModal';
 import { getTranslation } from '../i18n';
 import { brandConfig } from '../brand';
 import {
-  ArrowLeft, Upload, X, Code, ChevronUp, CheckCircle2, ArrowDown
+  ArrowLeft, Upload, X, Code, ChevronUp, CheckCircle2, ArrowDown, Loader2
 } from 'lucide-react';
 
 const VAD_SILENCE_CONFIG = {
@@ -65,6 +65,9 @@ export const VoiceChat = () => {
   const [docUploading, setDocUploading] = useState(false);
   const [docProgress, setDocProgress] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [pendingUploadFile, setPendingUploadFile] = useState(null);
+  const [editingProposal, setEditingProposal] = useState(null);
+  const [editingProposalVal, setEditingProposalVal] = useState('');
   const fileInputRef = useRef(null);
 
   // Notifications & Toast
@@ -514,17 +517,51 @@ export const VoiceChat = () => {
     };
   }, []);
 
+  // Proposal Actions via WebSocket
+  const handleAcceptProposals = useCallback((proposalIds = null) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'accept_proposals',
+        proposal_ids: proposalIds
+      }));
+    }
+  }, []);
+
+  const handleDismissProposal = useCallback((proposalId) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'dismiss_proposal',
+        proposal_id: proposalId
+      }));
+    }
+  }, []);
+
+  const handleSaveEditedProposal = useCallback((proposalId, newVal) => {
+    if (!newVal || !newVal.trim()) return;
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'edit_proposal',
+        proposal_id: proposalId,
+        new_value: newVal.trim()
+      }));
+    }
+    setEditingProposal(null);
+    setEditingProposalVal('');
+  }, []);
+
   // Document upload handler
   const handleUploadFile = async (file) => {
     if (!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
-    if (ext !== 'pdf' && ext !== 'docx') {
-      alert('Only .pdf and .docx files are accepted.');
+    const allowed = ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'webp'];
+    if (!allowed.includes(ext)) {
+      alert('Accepted file formats: .pdf, .docx, .jpg, .png, .webp');
       return;
     }
 
     const acceptedPrivacy = localStorage.getItem('voiceform_privacy_accepted');
     if (!acceptedPrivacy) {
+      setPendingUploadFile(file);
       setPrivacyModalOpen(true);
       return;
     }
@@ -536,7 +573,8 @@ export const VoiceChat = () => {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`/submissions/${submissionId}/documents`, {
+      const apiBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || '';
+      const res = await fetch(`${apiBase}/submissions/${submissionId}/documents`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
@@ -549,12 +587,26 @@ export const VoiceChat = () => {
         throw new Error(data.detail || 'Document upload failed');
       }
 
-      setChatMessages((prev) => [
-        ...prev,
-        { sender: 'system', text: data.message || 'Extracted answers from document.' }
-      ]);
-      if (data.proposals) {
+      if (data.proposals && data.proposals.length > 0) {
         setProposals(data.proposals);
+        const count = data.proposals.length;
+        const plural = count > 1 ? 's' : '';
+        const botMsg = getTranslation(uiLang, 'proposals_extracted_msg', { count, plural });
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: 'bot',
+            text: botMsg,
+            lang: uiLang,
+            onAcceptAll: () => handleAcceptProposals(data.proposals.map((p) => p.id))
+          }
+        ]);
+        speak(botMsg, uiLang);
+      } else {
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: 'system', text: data.message || 'Read document, but no matching form answers were found.' }
+        ]);
       }
     } catch (err) {
       setChatMessages((prev) => [
@@ -565,6 +617,16 @@ export const VoiceChat = () => {
       setDocUploading(false);
     }
   };
+
+  const handleAcceptPrivacy = useCallback(() => {
+    localStorage.setItem('voiceform_privacy_accepted', 'true');
+    setPrivacyModalOpen(false);
+    if (pendingUploadFile) {
+      const fileToUpload = pendingUploadFile;
+      setPendingUploadFile(null);
+      handleUploadFile(fileToUpload);
+    }
+  }, [pendingUploadFile]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -691,6 +753,7 @@ export const VoiceChat = () => {
       <PrivacyNoticeModal
         isOpen={privacyModalOpen}
         onClose={() => setPrivacyModalOpen(false)}
+        onAccept={handleAcceptPrivacy}
       />
 
       {/* Review & Confirm Step Modal */}
@@ -851,13 +914,7 @@ export const VoiceChat = () => {
           </div>
 
           {/* Quick Nav Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-8 shrink-0">
-            <Link
-              to="/user#my-submissions"
-              className="w-full sm:w-auto px-6 py-3 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-sm rounded-lg transition-colors flex items-center justify-center min-h-[44px]"
-            >
-              ← {t('success_btn_my_apps') || 'Back to My Applications'}
-            </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pb-8 shrink-0">
             <Link
               to="/user"
               className="w-full sm:w-auto px-6 py-3 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] font-semibold text-sm rounded-lg transition-colors flex items-center justify-center min-h-[44px]"
@@ -902,7 +959,7 @@ export const VoiceChat = () => {
                   type="file"
                   ref={fileInputRef}
                   onChange={(e) => e.target.files && handleUploadFile(e.target.files[0])}
-                  accept=".pdf,.docx"
+                  accept=".pdf,.docx,.jpg,.jpeg,.png,.webp"
                   className="hidden"
                 />
                 {!isCompleted && (
@@ -932,6 +989,17 @@ export const VoiceChat = () => {
                 )}
               </div>
             </div>
+
+            {/* Real-time Document Reading Progress */}
+            {docProgress && (
+              <div className="p-3 bg-[#E3D5CA]/90 border-b border-[#D6CCC2] flex items-center justify-between text-xs font-body text-[#1C1917] shrink-0">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1F3FBF]" />
+                  <span className="font-semibold">{docProgress.message || 'Processing document...'}</span>
+                </div>
+                <span className="font-mono text-[#524E4A]">{docProgress.progress || 0}%</span>
+              </div>
+            )}
 
             {/* Active Field Edit Banner */}
             {mode === 'editing' && activeEditingField && (
@@ -1088,6 +1156,7 @@ export const VoiceChat = () => {
             <Sheet
               fields={fields}
               answers={answers}
+              proposals={proposals}
               currentFieldId={currentField?.id}
               editingFieldId={editingFieldId}
               mode={mode}
@@ -1096,6 +1165,12 @@ export const VoiceChat = () => {
               submitting={submitting}
               onSubmit={() => setReviewModalOpen(true)}
               onGotoField={handleGotoField}
+              onAcceptProposals={handleAcceptProposals}
+              onDismissProposal={handleDismissProposal}
+              onEditProposal={(prop) => {
+                setEditingProposal(prop);
+                setEditingProposalVal(prop.value || '');
+              }}
               uiLang={uiLang}
             />
           </div>
@@ -1113,6 +1188,7 @@ export const VoiceChat = () => {
             <Sheet
               fields={fields}
               answers={answers}
+              proposals={proposals}
               currentFieldId={currentField?.id}
               editingFieldId={editingFieldId}
               mode={mode}
@@ -1127,10 +1203,74 @@ export const VoiceChat = () => {
                 handleGotoField(fId);
                 setDrawerOpen(false);
               }}
+              onAcceptProposals={handleAcceptProposals}
+              onDismissProposal={handleDismissProposal}
+              onEditProposal={(prop) => {
+                setEditingProposal(prop);
+                setEditingProposalVal(prop.value || '');
+              }}
               uiLang={uiLang}
             />
           </div>
         </Drawer>
+      )}
+
+      {/* Edit Proposal Value Modal */}
+      {editingProposal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C1917]/50 backdrop-blur-xs">
+          <div className="max-w-md w-full bg-[#F5EBE0] border border-[#D6CCC2] rounded-xl p-6 sheet-shadow text-[#1C1917] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-[#D6CCC2]">
+              <h3 className="text-lg font-bold font-display text-[#1C1917]">
+                {t('proposals_edit_modal_title')}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingProposal(null)}
+                className="p-1 text-[#524E4A] hover:text-[#1C1917] rounded-md transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#524E4A] font-body">
+              Field: <span className="font-semibold text-[#1C1917] capitalize">{(editingProposal.field_name || '').replace(/_/g, ' ')}</span>
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveEditedProposal(editingProposal.id, editingProposalVal);
+              }}
+              className="space-y-4"
+            >
+              <input
+                type="text"
+                value={editingProposalVal}
+                onChange={(e) => setEditingProposalVal(e.target.value)}
+                autoFocus
+                className="w-full h-11 bg-[#F5EBE0] border border-[#D6CCC2] rounded-lg px-3.5 text-base text-[#1C1917] focus-visible:outline-2 focus-visible:outline-[#1F3FBF]"
+              />
+
+              <div className="flex items-center justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProposal(null)}
+                  className="px-4 py-2 border border-[#D6CCC2] hover:bg-[#E3D5CA] text-[#1C1917] rounded-lg text-sm font-semibold transition-colors cursor-pointer min-h-[40px]"
+                >
+                  {t('edit_btn_cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={!editingProposalVal.trim()}
+                  className="px-4 py-2 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer min-h-[40px] disabled:opacity-50"
+                >
+                  {t('proposals_save_accept')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Debug Panel (Only when DEV or ?debug=1) */}

@@ -216,5 +216,16 @@ export const en = {
   not_found_btn_services: "Explore Citizen Services",
   not_found_btn_back: "Go Back",
   not_found_help_heading: "Looking for a service?",
-  not_found_help_desc: "Browse our full catalogue of citizen welfare services to start a fresh application."
+  not_found_help_desc: "Browse our full catalogue of citizen welfare services to start a fresh application.",
+
+  // Document Proposals
+  proposals_title: "Document suggestions ({count})",
+  proposals_accept_all: "Accept all ({count})",
+  proposals_accept: "Accept",
+  proposals_dismiss: "Dismiss",
+  proposals_edit: "Edit",
+  proposals_scanned_notice: "Scanned page — check carefully",
+  proposals_edit_modal_title: "Edit document proposal",
+  proposals_save_accept: "Save & Accept",
+  proposals_extracted_msg: "Extracted {count} answer{plural} from your document. You can accept suggestions or continue answering."
 };

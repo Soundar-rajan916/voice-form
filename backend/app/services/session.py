@@ -380,6 +380,9 @@ class GlobalSessionManagerService:
                 p for p in session.proposals.values()
                 if not p.get("is_excluded_from_accept_all", False)
             ]
+            # If all pending proposals were flagged as excluded, accept all pending
+            if not target_props and session.proposals:
+                target_props = list(session.proposals.values())
         else:
             target_props = [
                 p for p in session.proposals.values()

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle, Info, Bot, User, RotateCcw } from 'lucide-react';
+import { AlertCircle, Info, Bot, User, RotateCcw, CheckCheck } from 'lucide-react';
 
 export const ConversationMessage = ({ message, onRetryVoice }) => {
   const { sender, text, isError, replaced, lang, isVoice } = message;
@@ -87,6 +87,18 @@ export const ConversationMessage = ({ message, onRetryVoice }) => {
         >
           {text}
         </p>
+        {message.onAcceptAll && (
+          <div className="mt-3 pt-3 border-t border-[#D6CCC2]">
+            <button
+              type="button"
+              onClick={message.onAcceptAll}
+              className="px-4 py-2 bg-[#1F3FBF] hover:bg-[#1F3FBF]/90 text-white font-semibold text-sm rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs min-h-[40px]"
+            >
+              <CheckCheck className="w-4 h-4" />
+              <span>{isTamil ? 'அனைத்தையும் ஏற்றுக்கொள்' : 'Accept All Suggestions'}</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

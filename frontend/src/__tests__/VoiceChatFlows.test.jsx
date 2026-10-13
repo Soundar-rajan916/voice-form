@@ -380,4 +380,75 @@ describe('VoiceChat UI/UX Flows', () => {
       expect(screen.getByRole('button', { name: /Understanding your answer/i })).toBeDefined();
     });
   });
+
+  describe('Document Proposals Flow', () => {
+    it('renders extracted proposals in Sheet and handles accept all, individual accept, dismiss, and edit', () => {
+      const handleAcceptProposals = vi.fn();
+      const handleDismissProposal = vi.fn();
+      const handleEditProposal = vi.fn();
+
+      const sampleProposals = [
+        {
+          id: 101,
+          field_id: 1,
+          field_name: 'applicant_name',
+          value: 'Priya Sundaram',
+          page: 1,
+          read_method: 'vision',
+          status: 'pending',
+          scanned_warning: 'Read from a scanned page. Check this one.'
+        },
+        {
+          id: 102,
+          field_id: 2,
+          field_name: 'phone_number',
+          value: '9876543210',
+          page: 1,
+          read_method: 'text_layer',
+          status: 'pending'
+        }
+      ];
+
+      render(
+        <Sheet
+          fields={sampleFields}
+          answers={{}}
+          proposals={sampleProposals}
+          allAnswered={false}
+          mode="normal"
+          submissionStatus="in_progress"
+          onAcceptProposals={handleAcceptProposals}
+          onDismissProposal={handleDismissProposal}
+          onEditProposal={handleEditProposal}
+          uiLang="en"
+        />
+      );
+
+      // Verify proposal title and items
+      expect(screen.getByText(/Document suggestions \(2\)/i)).toBeDefined();
+      expect(screen.getByText('Priya Sundaram')).toBeDefined();
+      expect(screen.getByText('9876543210')).toBeDefined();
+      expect(screen.getByText(/Scanned page — check carefully/i)).toBeDefined();
+
+      // Test "Accept All" button
+      const acceptAllBtn = screen.getByRole('button', { name: /Accept all \(2\)/i });
+      fireEvent.click(acceptAllBtn);
+      expect(handleAcceptProposals).toHaveBeenCalledWith([101, 102]);
+
+      // Test individual "Accept" button
+      const acceptBtns = screen.getAllByTitle('Accept');
+      fireEvent.click(acceptBtns[0]);
+      expect(handleAcceptProposals).toHaveBeenCalledWith([101]);
+
+      // Test individual "Dismiss" button
+      const dismissBtns = screen.getAllByTitle('Dismiss');
+      fireEvent.click(dismissBtns[0]);
+      expect(handleDismissProposal).toHaveBeenCalledWith(101);
+
+      // Test individual "Edit" button
+      const editBtns = screen.getAllByTitle('Edit');
+      fireEvent.click(editBtns[0]);
+      expect(handleEditProposal).toHaveBeenCalledWith(sampleProposals[0]);
+    });
+  });
 });

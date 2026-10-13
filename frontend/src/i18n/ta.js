@@ -216,5 +216,16 @@ export const ta = {
   not_found_btn_services: "அனைத்து சேவைகள்",
   not_found_btn_back: "முந்தைய பக்கம்",
   not_found_help_heading: "சேவைகளைத் தேட உதவி தேவையா?",
-  not_found_help_desc: "புதிய விண்ணப்பத்தைத் தொடங்க எமது குடிமக்கள் சேவைகள் பட்டியலுக்குச் செல்லலாம்."
+  not_found_help_desc: "புதிய விண்ணப்பத்தைத் தொடங்க எமது குடிமக்கள் சேவைகள் பட்டியலுக்குச் செல்லலாம்.",
+
+  // Document Proposals
+  proposals_title: "ஆவண பரிந்துரைகள் ({count})",
+  proposals_accept_all: "அனைத்தையும் ஏற்றுக்கொள் ({count})",
+  proposals_accept: "ஏற்றுக்கொள்",
+  proposals_dismiss: "நிராகரி",
+  proposals_edit: "திருத்து",
+  proposals_scanned_notice: "ஸ்கேன் செய்யப்பட்ட பக்கம் — கவனமாக சரிபார்க்கவும்",
+  proposals_edit_modal_title: "ஆவண பரிந்துரையை திருத்து",
+  proposals_save_accept: "சேமித்து ஏற்றுக்கொள்",
+  proposals_extracted_msg: "உங்கள் ஆவணத்திலிருந்து {count} பதில்கள் கண்டறியப்பட்டன. அவற்றை நீங்கள் சரிபார்த்து ஏற்றுக்கொள்ளலாம்."
 };

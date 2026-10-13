@@ -36,7 +36,10 @@ describe('i18n Translation Placeholder Integrity', () => {
       review_edit_aria: { field: 'Email' },
       edit_reask_intro: { field: 'Address', currentValue: '123 Main St' },
       edit_banner_label: { field: 'Address' },
-      edit_row_aria: { label: 'Name' }
+      edit_row_aria: { label: 'Name' },
+      proposals_title: { count: 3 },
+      proposals_accept_all: { count: 3 },
+      proposals_extracted_msg: { count: 3, plural: 's' }
     };
 
     ['en', 'ta'].forEach((lang) => {
@@ -65,7 +68,10 @@ describe('i18n Translation Placeholder Integrity', () => {
       'review_edit_aria',
       'edit_reask_intro',
       'edit_banner_label',
-      'edit_row_aria'
+      'edit_row_aria',
+      'proposals_title',
+      'proposals_accept_all',
+      'proposals_extracted_msg'
     ]);
 
     // Check English dictionary

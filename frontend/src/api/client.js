@@ -1,4 +1,4 @@
-const API_BASE = '';
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || '';
 
 async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem('voiceform_token');

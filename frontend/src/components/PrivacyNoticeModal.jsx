@@ -1,12 +1,16 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 
-export const PrivacyNoticeModal = ({ isOpen, onClose }) => {
+export const PrivacyNoticeModal = ({ isOpen, onClose, onAccept }) => {
   if (!isOpen) return null;
 
   const handleAccept = () => {
     localStorage.setItem('voiceform_privacy_accepted', 'true');
-    onClose();
+    if (onAccept) {
+      onAccept();
+    } else {
+      onClose();
+    }
   };
 
   return (
